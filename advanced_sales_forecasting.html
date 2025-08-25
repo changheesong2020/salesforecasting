@@ -698,19 +698,22 @@
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
                     ma_weight: 0.2,
-                    exp_weight: 0.2
+                    exp_weight: 0.2,
+                    forecast_length: 12
                 },
                 transformer_model: {
                     attention_heads: 8,
                     model_dim: 64,
                     learning_rate: 0.001,
-                    sequence_length: 12
+                    sequence_length: 12,
+                    forecast_length: 12
                 },
                 gru_network: {
                     hidden_size: 50,
                     sequence_length: 12,
                     learning_rate: 0.01,
-                    dropout_rate: 0.2
+                    dropout_rate: 0.2,
+                    forecast_length: 12
                 },
                 wavelet_arima: {
                     decomp_levels: 3,
@@ -722,12 +725,13 @@
                     n_estimators: 100,
                     learning_rate: 0.1,
                     max_depth: 6,
-                    subsample: 0.8
+                    subsample: 0.8,
+                    forecast_length: 12
                 },
                 nbeats_model: {
                     num_blocks: 3,
                     stack_weight: 0.5,
-                    forecast_length: 12, // default, adjustable to 24
+                    forecast_length: 12, // adjustable between 12 and 24 months
                     backcast_length: 24
                 }
             });
@@ -738,19 +742,22 @@
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
                     ma_weight: 0.2,
-                    exp_weight: 0.2
+                    exp_weight: 0.2,
+                    forecast_length: 12
                 },
                 transformer_model: {
                     attention_heads: 8,
                     model_dim: 64,
                     learning_rate: 0.001,
-                    sequence_length: 12
+                    sequence_length: 12,
+                    forecast_length: 12
                 },
                 gru_network: {
                     hidden_size: 50,
                     sequence_length: 12,
                     learning_rate: 0.01,
-                    dropout_rate: 0.2
+                    dropout_rate: 0.2,
+                    forecast_length: 12
                 },
                 wavelet_arima: {
                     decomp_levels: 3,
@@ -762,12 +769,13 @@
                     n_estimators: 100,
                     learning_rate: 0.1,
                     max_depth: 6,
-                    subsample: 0.8
+                    subsample: 0.8,
+                    forecast_length: 12
                 },
                 nbeats_model: {
                     num_blocks: 3,
                     stack_weight: 0.5,
-                    forecast_length: 12,
+                    forecast_length: 12, // adjustable between 12 and 24 months
                     backcast_length: 24
                 }
             };
@@ -851,7 +859,7 @@
                 // 🚀 고급 앙상블
                 advanced_ensemble: (data, params) => {
                     if (data.length === 0) return [];
-                    
+
                     const predictions = [];
                     const weights = {
                         trend: params.trend_weight,
@@ -859,15 +867,16 @@
                         ma: params.ma_weight,
                         exp: params.exp_weight
                     };
-                    
+                    const forecast_length = params.forecast_length;
+
                     // 다중 모델 예측
-                    const trendPred = linearTrend(data, { growth_rate: 0.06, seasonal_factor: 0.12 });
-                    const seasonalPred = seasonalDecompose(data, { strength: 0.8 });
-                    const maPred = movingAverage(data, { window: 8, trend_adj: 0.04 });
-                    const expPred = exponentialSmoothing(data, { alpha: 0.4, beta: 0.3, gamma: 0.3 });
-                    
-                    for (let i = 0; i < 12; i++) {
-                        const ensembleValue = 
+                    const trendPred = linearTrend(data, { growth_rate: 0.06, seasonal_factor: 0.12 }, forecast_length);
+                    const seasonalPred = seasonalDecompose(data, { strength: 0.8 }, forecast_length);
+                    const maPred = movingAverage(data, { window: 8, trend_adj: 0.04 }, forecast_length);
+                    const expPred = exponentialSmoothing(data, { alpha: 0.4, beta: 0.3, gamma: 0.3 }, forecast_length);
+
+                    for (let i = 0; i < forecast_length; i++) {
+                        const ensembleValue =
                             (trendPred[i]?.sales || 0) * weights.trend +
                             (seasonalPred[i]?.sales || 0) * weights.seasonal +
                             (maPred[i]?.sales || 0) * weights.ma +
@@ -889,7 +898,7 @@
                 transformer_model: (data, params) => {
                     if (data.length < 24) return [];
                     
-                    const { attention_heads, model_dim, learning_rate, sequence_length } = params;
+                    const { attention_heads, model_dim, learning_rate, sequence_length, forecast_length } = params;
                     const predictions = [];
                     
                     const sales = data.map(d => d.sales);
@@ -897,10 +906,10 @@
                     const sequences = createSequences(normalized, sequence_length);
                     
                     // Self-Attention 메커니즘 시뮬레이션
-                    const attention_weights = calculateAttentionWeights(sequences, attention_heads);
+                    const attention_weights = calculateAttentionWeights(sequences, attention_heads, forecast_length);
                     
-                    for (let i = 1; i <= 12; i++) {
-                        const context_vector = applyAttention(sequences.slice(-sequence_length), attention_weights);
+                    for (let i = 1; i <= forecast_length; i++) {
+                        const context_vector = applyAttention(sequences.slice(-sequence_length), attention_weights, forecast_length);
                         const base_prediction = context_vector.reduce((sum, val, idx) => sum + val * (1 - idx * learning_rate), 0);
                         
                         const seasonal_factor = 1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI + Math.PI/4);
@@ -922,7 +931,7 @@
                 gru_network: (data, params) => {
                     if (data.length < 24) return [];
                     
-                    const { hidden_size, sequence_length, learning_rate, dropout_rate } = params;
+                    const { hidden_size, sequence_length, learning_rate, dropout_rate, forecast_length } = params;
                     const predictions = [];
                     
                     const sales = data.map(d => d.sales);
@@ -934,7 +943,7 @@
                         hidden_state = gruCell(normalized[normalized.length - sequence_length + t], hidden_state, dropout_rate);
                     }
                     
-                    for (let i = 1; i <= 12; i++) {
+                    for (let i = 1; i <= forecast_length; i++) {
                         const prediction = gruPredict(hidden_state, i, learning_rate);
                         const denorm_pred = denormalizeData(prediction, sales);
                         
@@ -982,10 +991,11 @@
                 },
 
                 // 🚀 그라디언트 부스팅
-                gradient_boosting: (data, params) => {
+                gradient_boosting: (data, params, forecast_length) => {
                     if (data.length < 24) return [];
-                    
+
                     const { n_estimators, learning_rate, max_depth, subsample } = params;
+                    const horizon = forecast_length ?? 12;
                     const predictions = [];
                     
                     const features = engineerFeatures(data);
@@ -1005,7 +1015,7 @@
                         if (Math.abs(residuals.reduce((sum, r) => sum + r, 0)) < 0.01) break;
                     }
                     
-                    for (let i = 1; i <= 12; i++) {
+                    for (let i = 1; i <= horizon; i++) {
                         const future_features = createFutureFeatures(data, i);
                         let prediction = data[data.length - 1].sales;
                         
@@ -1042,7 +1052,7 @@
                     
                     stack_types.forEach(stack_type => {
                         for (let block = 0; block < num_blocks; block++) {
-                            const { block_forecast, block_backcast } = nbeatsBlock(backcast, stack_type, stack_weight);
+                            const { block_forecast, block_backcast } = nbeatsBlock(backcast, stack_type, stack_weight, forecast_length);
                             
                             forecast = forecast.map((f, i) => f + block_forecast[i] * stack_weight);
                             backcast = backcast.map((b, i) => b - (block_backcast[i] || 0) * stack_weight);
@@ -1086,15 +1096,16 @@
                 return sequences;
             };
 
-            const calculateAttentionWeights = (sequences, heads) => {
-                return Array(heads).fill().map(() => 
-                    Array(12).fill().map(() => Math.random())
+            const calculateAttentionWeights = (sequences, heads, forecast_length) => {
+                return Array(heads).fill().map(() =>
+                    Array(forecast_length).fill().map(() => Math.random())
                 );
             };
 
-            const applyAttention = (sequences, weights) => {
-                const last_seq = sequences[sequences.length - 1] || Array(12).fill(0);
-                return last_seq.map(val => val * (0.8 + Math.random() * 0.4));
+            const applyAttention = (sequences, weights, forecast_length) => {
+                const last_seq = sequences[sequences.length - 1] || [];
+                const seq = Array(forecast_length).fill(0).map((_, i) => last_seq[i] || 0);
+                return seq.map(val => val * (0.8 + Math.random() * 0.4));
             };
 
             const gruCell = (input, hidden, dropout) => {
@@ -1116,15 +1127,15 @@
             const sigmoid = (x) => 1 / (1 + Math.exp(-x));
 
             // 기본 알고리즘들
-            const linearTrend = (data, params) => {
+            const linearTrend = (data, params, forecast_length) => {
                 const { growth_rate, seasonal_factor } = params;
                 const predictions = [];
                 const recentSales = data.slice(-6).reduce((sum, d) => sum + d.sales, 0) / 6;
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     const seasonal = 1 + seasonal_factor * Math.sin((i - 1) / 12 * 2 * Math.PI);
                     const predicted = recentSales * (1 + growth_rate) * seasonal;
-                    
+
                     predictions.push({
                         year: 2025,
                         month: i,
@@ -1136,22 +1147,22 @@
                 return predictions;
             };
 
-            const seasonalDecompose = (data, params) => {
+            const seasonalDecompose = (data, params, forecast_length) => {
                 const predictions = [];
                 const { strength } = params;
-                
+
                 const monthlyAvg = Array(12).fill(0).map((_, month) => {
                     const monthData = data.filter(d => d.month === month + 1);
-                    return monthData.length > 0 
+                    return monthData.length > 0
                         ? monthData.reduce((sum, d) => sum + d.sales, 0) / monthData.length
                         : 0;
                 });
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     predictions.push({
                         year: 2025,
                         month: i,
-                        sales: Math.round(Math.max(0, monthlyAvg[i - 1] * strength)),
+                        sales: Math.round(Math.max(0, monthlyAvg[(i - 1) % 12] * strength)),
                         date: `2025-${i.toString().padStart(2, '0')}`,
                         type: 'predicted'
                     });
@@ -1159,13 +1170,13 @@
                 return predictions;
             };
 
-            const movingAverage = (data, params) => {
+            const movingAverage = (data, params, forecast_length) => {
                 const { window, trend_adj } = params;
                 const predictions = [];
                 const recentData = data.slice(-window);
                 const avgSales = recentData.reduce((sum, d) => sum + d.sales, 0) / recentData.length;
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     predictions.push({
                         year: 2025,
                         month: i,
@@ -1177,18 +1188,18 @@
                 return predictions;
             };
 
-            const exponentialSmoothing = (data, params) => {
+            const exponentialSmoothing = (data, params, forecast_length) => {
                 const { alpha, beta, gamma } = params;
                 const predictions = [];
-                
+
                 const recentSales = data[data.length - 1].sales;
-                const trend = data.length >= 12 ? 
+                const trend = data.length >= 12 ?
                     (data[data.length - 1].sales - data[data.length - 12].sales) / 12 : 0;
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     const seasonal = 1 + gamma * Math.sin((i - 1) / 12 * 2 * Math.PI);
                     const forecast = (recentSales + trend * i) * seasonal;
-                    
+
                     predictions.push({
                         year: 2025,
                         month: i,
@@ -1262,20 +1273,19 @@
                 ];
             };
 
-            const nbeatsBlock = (input, stackType, weight) => {
+            const nbeatsBlock = (input, stackType, weight, forecast_length) => {
                 const inputLength = input.length;
-                const forecastLength = 12;
                 
                 let block_forecast, block_backcast;
                 
                 if (stackType === 'trend') {
                     const trend = (input[inputLength - 1] - input[0]) / inputLength;
-                    block_forecast = Array.from({length: forecastLength}, (_, i) => 
+                    block_forecast = Array.from({length: forecast_length}, (_, i) =>
                         input[inputLength - 1] + trend * (i + 1) * weight
                     );
                     block_backcast = input.map((val, i) => val + trend * 0.1 * weight);
                 } else {
-                    block_forecast = Array.from({length: forecastLength}, (_, i) => 
+                    block_forecast = Array.from({length: forecast_length}, (_, i) =>
                         input[inputLength - 1] * (1 + 0.1 * Math.sin((i + 1) / 12 * 2 * Math.PI)) * weight
                     );
                     block_backcast = input.map((val, i) => 
@@ -1324,7 +1334,12 @@
                 setIsLoading(true);
                 
                 try {
-                    const result = algorithms[selectedAlgorithm](aggregatedData, algorithmParameters[selectedAlgorithm]);
+
+                    const result = algorithms[selectedAlgorithm](
+                        aggregatedData,
+                        parameters[selectedAlgorithm],
+                        parameters[selectedAlgorithm].forecast_length
+                    );
                     setTimeout(() => setIsLoading(false), 500);
                     return result;
                 } catch (error) {
@@ -1433,7 +1448,8 @@
                         trend_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "추세 모델의 가중치 - 데이터의 장기적 증가/감소 패턴 반영 정도" },
                         seasonal_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "계절성 모델의 가중치 - 월별/분기별 반복 패턴 반영 정도" },
                         ma_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "이동평균 모델의 가중치 - 최근 평균값 기반 안정적 예측 반영 정도" },
-                        exp_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "지수평활 모델의 가중치 - 최근 데이터에 더 높은 가중치를 둔 예측 반영 정도" }
+                        exp_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "지수평활 모델의 가중치 - 최근 데이터에 더 높은 가중치를 둔 예측 반영 정도" },
+                        forecast_length: { min: 1, max: 12, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 transformer_model: {
@@ -1443,7 +1459,8 @@
                         attention_heads: { min: 4, max: 16, step: 2, suffix: "개", description: "어텐션 헤드 수 - 다양한 관점에서 패턴을 학습하는 병렬 처리 단위 수" },
                         model_dim: { min: 32, max: 128, step: 16, suffix: "", description: "모델 차원 - 내부 표현의 복잡도와 학습 용량을 결정" },
                         learning_rate: { min: 0.0001, max: 0.01, step: 0.0001, suffix: "", description: "학습률 - 모델이 패턴을 학습하는 속도, 너무 높으면 불안정" },
-                        sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이 - 예측을 위해 참고하는 과거 데이터 기간" }
+                        sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이 - 예측을 위해 참고하는 과거 데이터 기간" },
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 gru_network: {
@@ -1453,7 +1470,8 @@
                         hidden_size: { min: 16, max: 128, step: 8, suffix: "", description: "은닉 유닛 수 - 네트워크의 기억 용량과 학습 복잡도 결정" },
                         sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이 - GRU가 기억할 과거 데이터의 범위" },
                         learning_rate: { min: 0.001, max: 0.1, step: 0.001, suffix: "", description: "학습률 - 가중치 업데이트 크기, 수렴 속도와 안정성에 영향" },
-                        dropout_rate: { min: 0.1, max: 0.5, step: 0.1, suffix: "", description: "드롭아웃 비율 - 과적합 방지를 위해 일정 비율의 뉴런을 비활성화" }
+                        dropout_rate: { min: 0.1, max: 0.5, step: 0.1, suffix: "", description: "드롭아웃 비율 - 과적합 방지를 위해 일정 비율의 뉴런을 비활성화" },
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 wavelet_arima: {
@@ -1473,7 +1491,8 @@
                         n_estimators: { min: 50, max: 200, step: 10, suffix: "개", description: "추정기 수 - 부스팅에 사용할 약한 학습기의 총 개수" },
                         learning_rate: { min: 0.01, max: 0.3, step: 0.01, suffix: "", description: "학습률 - 각 부스팅 단계의 기여도, 낮을수록 안정적이지만 느림" },
                         max_depth: { min: 3, max: 10, step: 1, suffix: "", description: "최대 깊이 - 개별 트리의 복잡도, 높을수록 복잡한 패턴 학습 가능" },
-                        subsample: { min: 0.5, max: 1.0, step: 0.1, suffix: "", description: "서브샘플 비율 - 각 트리 학습시 사용할 데이터 비율, 과적합 방지" }
+                        subsample: { min: 0.5, max: 1.0, step: 0.1, suffix: "", description: "서브샘플 비율 - 각 트리 학습시 사용할 데이터 비율, 과적합 방지" },
+                        forecast_length: { min: 6, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 nbeats_model: {
