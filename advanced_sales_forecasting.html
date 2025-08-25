@@ -710,7 +710,8 @@
                     hidden_size: 50,
                     sequence_length: 12,
                     learning_rate: 0.01,
-                    dropout_rate: 0.2
+                    dropout_rate: 0.2,
+                    forecast_length: 12
                 },
                 wavelet_arima: {
                     decomp_levels: 3,
@@ -750,7 +751,8 @@
                     hidden_size: 50,
                     sequence_length: 12,
                     learning_rate: 0.01,
-                    dropout_rate: 0.2
+                    dropout_rate: 0.2,
+                    forecast_length: 12
                 },
                 wavelet_arima: {
                     decomp_levels: 3,
@@ -922,7 +924,7 @@
                 gru_network: (data, params) => {
                     if (data.length < 24) return [];
                     
-                    const { hidden_size, sequence_length, learning_rate, dropout_rate } = params;
+                    const { hidden_size, sequence_length, learning_rate, dropout_rate, forecast_length } = params;
                     const predictions = [];
                     
                     const sales = data.map(d => d.sales);
@@ -934,7 +936,7 @@
                         hidden_state = gruCell(normalized[normalized.length - sequence_length + t], hidden_state, dropout_rate);
                     }
                     
-                    for (let i = 1; i <= 12; i++) {
+                    for (let i = 1; i <= forecast_length; i++) {
                         const prediction = gruPredict(hidden_state, i, learning_rate);
                         const denorm_pred = denormalizeData(prediction, sales);
                         
@@ -1453,7 +1455,8 @@
                         hidden_size: { min: 16, max: 128, step: 8, suffix: "", description: "은닉 유닛 수 - 네트워크의 기억 용량과 학습 복잡도 결정" },
                         sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이 - GRU가 기억할 과거 데이터의 범위" },
                         learning_rate: { min: 0.001, max: 0.1, step: 0.001, suffix: "", description: "학습률 - 가중치 업데이트 크기, 수렴 속도와 안정성에 영향" },
-                        dropout_rate: { min: 0.1, max: 0.5, step: 0.1, suffix: "", description: "드롭아웃 비율 - 과적합 방지를 위해 일정 비율의 뉴런을 비활성화" }
+                        dropout_rate: { min: 0.1, max: 0.5, step: 0.1, suffix: "", description: "드롭아웃 비율 - 과적합 방지를 위해 일정 비율의 뉴런을 비활성화" },
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 wavelet_arima: {
