@@ -1948,7 +1948,9 @@
         };
 
         // 앱 렌더링
-        ReactDOM.render(<AdvancedSalesForecastingApp />, document.getElementById('root'));
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<AdvancedSalesForecastingApp />);
     </script>
 </body>
 </html>
