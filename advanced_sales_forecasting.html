@@ -649,7 +649,7 @@
                                 display: true,
                                 title: {
                                     display: true,
-                                    text: '매출 (억원)',
+                                    text: '매출 (만원)',
                                     font: {
                                         weight: 'bold'
                                     }
@@ -1434,7 +1434,7 @@
             // 🎯 CSV 내보내기
             const exportResults = () => {
                 const exportData = [
-                    ['날짜', '예측 매출 (억원)', '국가', '제품', '알고리즘', '파라메터'],
+                    ['날짜', '예측 매출 (만원)', '국가', '제품', '알고리즘', '파라메터'],
                     ...predictions.map(pred => [
                         pred.date,
                         pred.sales,
@@ -1582,20 +1582,20 @@
                         <div className="stats-grid">
                             <div className="stat-card">
                                 <div className="stat-value text-blue-600">
-                                    {stats.total2024.toLocaleString()}억원
+                                    {stats.total2024.toLocaleString()}만원
                                 </div>
                                 <div className="stat-label">2024년 실제 매출</div>
                             </div>
                             <div className="stat-card">
                                 <div className="stat-value text-purple-600">
-                                    {stats.predicted2025.toLocaleString()}억원
+                                    {stats.predicted2025.toLocaleString()}만원
                                 </div>
                                 <div className="stat-label">2025년 예상 매출</div>
                             </div>
                             {forecastPeriod === 24 && (
                                 <div className="stat-card">
                                     <div className="stat-value text-pink-600">
-                                        {stats.totalPredicted.toLocaleString()}억원
+                                        {stats.totalPredicted.toLocaleString()}만원
                                     </div>
                                     <div className="stat-label">총 24개월 예상 매출</div>
                                 </div>
@@ -1608,7 +1608,7 @@
                             </div>
                             <div className="stat-card">
                                 <div className="stat-value text-indigo-600">
-                                    {stats.avgMonthly2025.toLocaleString()}억원
+                                    {stats.avgMonthly2025.toLocaleString()}만원
                                 </div>
                                 <div className="stat-label">월 평균 매출</div>
                             </div>
@@ -1818,7 +1818,7 @@
                                                 <thead>
                                                     <tr>
                                                         <th>월</th>
-                                                        <th className="text-right">예측 매출 (억원)</th>
+                                                        <th className="text-right">예측 매출 (만원)</th>
                                                         <th className="text-right">전년 동월 대비</th>
                                                         <th className="text-right">신뢰구간</th>
                                                         <th>모델</th>
