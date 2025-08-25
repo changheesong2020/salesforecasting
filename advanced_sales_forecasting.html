@@ -722,7 +722,8 @@
                     n_estimators: 100,
                     learning_rate: 0.1,
                     max_depth: 6,
-                    subsample: 0.8
+                    subsample: 0.8,
+                    forecast_length: 12
                 },
                 nbeats_model: {
                     num_blocks: 3,
@@ -762,7 +763,8 @@
                     n_estimators: 100,
                     learning_rate: 0.1,
                     max_depth: 6,
-                    subsample: 0.8
+                    subsample: 0.8,
+                    forecast_length: 12
                 },
                 nbeats_model: {
                     num_blocks: 3,
@@ -982,10 +984,11 @@
                 },
 
                 // 🚀 그라디언트 부스팅
-                gradient_boosting: (data, params) => {
+                gradient_boosting: (data, params, forecast_length) => {
                     if (data.length < 24) return [];
-                    
+
                     const { n_estimators, learning_rate, max_depth, subsample } = params;
+                    const horizon = forecast_length ?? 12;
                     const predictions = [];
                     
                     const features = engineerFeatures(data);
@@ -1005,7 +1008,7 @@
                         if (Math.abs(residuals.reduce((sum, r) => sum + r, 0)) < 0.01) break;
                     }
                     
-                    for (let i = 1; i <= 12; i++) {
+                    for (let i = 1; i <= horizon; i++) {
                         const future_features = createFutureFeatures(data, i);
                         let prediction = data[data.length - 1].sales;
                         
@@ -1324,7 +1327,11 @@
                 setIsLoading(true);
                 
                 try {
-                    const result = algorithms[selectedAlgorithm](aggregatedData, parameters[selectedAlgorithm]);
+                    const result = algorithms[selectedAlgorithm](
+                        aggregatedData,
+                        parameters[selectedAlgorithm],
+                        parameters[selectedAlgorithm].forecast_length
+                    );
                     setTimeout(() => setIsLoading(false), 500);
                     return result;
                 } catch (error) {
@@ -1473,7 +1480,8 @@
                         n_estimators: { min: 50, max: 200, step: 10, suffix: "개", description: "추정기 수 - 부스팅에 사용할 약한 학습기의 총 개수" },
                         learning_rate: { min: 0.01, max: 0.3, step: 0.01, suffix: "", description: "학습률 - 각 부스팅 단계의 기여도, 낮을수록 안정적이지만 느림" },
                         max_depth: { min: 3, max: 10, step: 1, suffix: "", description: "최대 깊이 - 개별 트리의 복잡도, 높을수록 복잡한 패턴 학습 가능" },
-                        subsample: { min: 0.5, max: 1.0, step: 0.1, suffix: "", description: "서브샘플 비율 - 각 트리 학습시 사용할 데이터 비율, 과적합 방지" }
+                        subsample: { min: 0.5, max: 1.0, step: 0.1, suffix: "", description: "서브샘플 비율 - 각 트리 학습시 사용할 데이터 비율, 과적합 방지" },
+                        forecast_length: { min: 6, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 nbeats_model: {
