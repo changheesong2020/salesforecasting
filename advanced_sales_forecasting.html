@@ -482,7 +482,7 @@
                     </div>
                 </div>
             );
-        }
+        };
 
         // 🎯 로딩 컴포넌트
         const LoadingSpinner = ({ message = "분석 중..." }) => (
@@ -727,7 +727,7 @@
                 nbeats_model: {
                     num_blocks: 3,
                     stack_weight: 0.5,
-                    forecast_length: 24,
+                    forecast_length: 12,
                     backcast_length: 24
                 }
             });
@@ -866,21 +866,18 @@
                     const maPred = movingAverage(data, { window: 8, trend_adj: 0.04 });
                     const expPred = exponentialSmoothing(data, { alpha: 0.4, beta: 0.3, gamma: 0.3 });
                     
-                    for (let i = 0; i < 24; i++) {
+                    for (let i = 0; i < 12; i++) {
                         const ensembleValue = 
                             (trendPred[i]?.sales || 0) * weights.trend +
                             (seasonalPred[i]?.sales || 0) * weights.seasonal +
                             (maPred[i]?.sales || 0) * weights.ma +
                             (expPred[i]?.sales || 0) * weights.exp;
                         
-                        const year = i < 12 ? 2025 : 2026;
-                        const month = (i % 12) + 1;
-                        
                         predictions.push({
-                            year: year,
-                            month: month,
+                            year: 2025,
+                            month: i + 1,
                             sales: Math.round(Math.max(0, ensembleValue)),
-                            date: `${year}-${month.toString().padStart(2, '0')}`,
+                            date: `2025-${(i + 1).toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -902,21 +899,18 @@
                     // Self-Attention 메커니즘 시뮬레이션
                     const attention_weights = calculateAttentionWeights(sequences, attention_heads);
                     
-                    for (let i = 1; i <= 24; i++) {
+                    for (let i = 1; i <= 12; i++) {
                         const context_vector = applyAttention(sequences.slice(-sequence_length), attention_weights);
                         const base_prediction = context_vector.reduce((sum, val, idx) => sum + val * (1 - idx * learning_rate), 0);
                         
                         const seasonal_factor = 1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI + Math.PI/4);
                         const forecast = denormalizeData(base_prediction * seasonal_factor, sales);
                         
-                        const year = i <= 12 ? 2025 : 2026;
-                        const month = ((i - 1) % 12) + 1;
-                        
                         predictions.push({
-                            year: year,
-                            month: month,
+                            year: 2025,
+                            month: i,
                             sales: Math.round(Math.max(0, forecast)),
-                            date: `${year}-${month.toString().padStart(2, '0')}`,
+                            date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -940,21 +934,18 @@
                         hidden_state = gruCell(normalized[normalized.length - sequence_length + t], hidden_state, dropout_rate);
                     }
                     
-                    for (let i = 1; i <= 24; i++) {
+                    for (let i = 1; i <= 12; i++) {
                         const prediction = gruPredict(hidden_state, i, learning_rate);
                         const denorm_pred = denormalizeData(prediction, sales);
                         
-                        const trend_factor = 1 + 0.05 * i / 24;
+                        const trend_factor = 1 + 0.05 * i / 12;
                         const seasonal_factor = 1 + 0.12 * Math.sin((i - 1) / 12 * 2 * Math.PI + Math.PI/3);
                         
-                        const year = i <= 12 ? 2025 : 2026;
-                        const month = ((i - 1) % 12) + 1;
-                        
                         predictions.push({
-                            year: year,
-                            month: month,
+                            year: 2025,
+                            month: i,
                             sales: Math.round(Math.max(0, denorm_pred * trend_factor * seasonal_factor)),
-                            date: `${year}-${month.toString().padStart(2, '0')}`,
+                            date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -972,20 +963,17 @@
                     const sales = data.map(d => d.sales);
                     const decomposed = waveletDecompose(sales, decomp_levels);
                     const forecasts = decomposed.map(component => 
-                        arimaForecast(component, [arima_p, arima_d, arima_q], 24)
+                        arimaForecast(component, [arima_p, arima_d, arima_q], 12)
                     );
                     
-                    for (let i = 0; i < 24; i++) {
+                    for (let i = 0; i < 12; i++) {
                         const reconstructed = waveletReconstruct(forecasts.map(f => f[i]));
                         
-                        const year = i < 12 ? 2025 : 2026;
-                        const month = (i % 12) + 1;
-                        
                         predictions.push({
-                            year: year,
-                            month: month,
+                            year: 2025,
+                            month: i + 1,
                             sales: Math.round(Math.max(0, reconstructed)),
-                            date: `${year}-${month.toString().padStart(2, '0')}`,
+                            date: `2025-${(i + 1).toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -1017,7 +1005,7 @@
                         if (Math.abs(residuals.reduce((sum, r) => sum + r, 0)) < 0.01) break;
                     }
                     
-                    for (let i = 1; i <= 24; i++) {
+                    for (let i = 1; i <= 12; i++) {
                         const future_features = createFutureFeatures(data, i);
                         let prediction = data[data.length - 1].sales;
                         
@@ -1025,14 +1013,11 @@
                             prediction += model.weight * model.tree.predict([future_features])[0];
                         });
                         
-                        const year = i <= 12 ? 2025 : 2026;
-                        const month = ((i - 1) % 12) + 1;
-                        
                         predictions.push({
-                            year: year,
-                            month: month,
+                            year: 2025,
+                            month: i,
                             sales: Math.round(Math.max(0, prediction)),
-                            date: `${year}-${month.toString().padStart(2, '0')}`,
+                            date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -1050,31 +1035,28 @@
                     const sales = data.map(d => d.sales);
                     const normalized = normalizeData(sales);
                     
-                    let forecast = Array(forecast_length * 2).fill(0); // 24개월
+                    let forecast = Array(forecast_length).fill(0);
                     let backcast = [...normalized.slice(-backcast_length)];
                     
                     const stack_types = ['trend', 'seasonal'];
                     
                     stack_types.forEach(stack_type => {
                         for (let block = 0; block < num_blocks; block++) {
-                            const { block_forecast, block_backcast } = nbeatsBlock(backcast, stack_type, stack_weight, 24);
+                            const { block_forecast, block_backcast } = nbeatsBlock(backcast, stack_type, stack_weight);
                             
                             forecast = forecast.map((f, i) => f + block_forecast[i] * stack_weight);
                             backcast = backcast.map((b, i) => b - (block_backcast[i] || 0) * stack_weight);
                         }
                     });
                     
-                    for (let i = 0; i < 24; i++) {
+                    for (let i = 0; i < forecast_length; i++) {
                         const denorm_pred = denormalizeData(forecast[i], sales);
                         
-                        const year = i < 12 ? 2025 : 2026;
-                        const month = (i % 12) + 1;
-                        
                         predictions.push({
-                            year: year,
-                            month: month,
+                            year: 2025,
+                            month: i + 1,
                             sales: Math.round(Math.max(0, denorm_pred)),
-                            date: `${year}-${month.toString().padStart(2, '0')}`,
+                            date: `2025-${(i + 1).toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -1139,18 +1121,15 @@
                 const predictions = [];
                 const recentSales = data.slice(-6).reduce((sum, d) => sum + d.sales, 0) / 6;
                 
-                for (let i = 1; i <= 24; i++) {
+                for (let i = 1; i <= 12; i++) {
                     const seasonal = 1 + seasonal_factor * Math.sin((i - 1) / 12 * 2 * Math.PI);
-                    const predicted = recentSales * (1 + growth_rate) * seasonal * Math.pow(1.02, Math.floor((i-1)/12)); // 연간 증가 반영
-                    
-                    const year = i <= 12 ? 2025 : 2026;
-                    const month = ((i - 1) % 12) + 1;
+                    const predicted = recentSales * (1 + growth_rate) * seasonal;
                     
                     predictions.push({
-                        year: year,
-                        month: month,
+                        year: 2025,
+                        month: i,
                         sales: Math.round(Math.max(0, predicted)),
-                        date: `${year}-${month.toString().padStart(2, '0')}`,
+                        date: `2025-${i.toString().padStart(2, '0')}`,
                         type: 'predicted'
                     });
                 }
@@ -1168,18 +1147,12 @@
                         : 0;
                 });
                 
-                for (let i = 1; i <= 24; i++) {
-                    const monthIndex = ((i - 1) % 12);
-                    const yearFactor = Math.pow(1.03, Math.floor((i-1)/12)); // 2026년 증가 반영
-                    
-                    const year = i <= 12 ? 2025 : 2026;
-                    const month = monthIndex + 1;
-                    
+                for (let i = 1; i <= 12; i++) {
                     predictions.push({
-                        year: year,
-                        month: month,
-                        sales: Math.round(Math.max(0, monthlyAvg[monthIndex] * strength * yearFactor)),
-                        date: `${year}-${month.toString().padStart(2, '0')}`,
+                        year: 2025,
+                        month: i,
+                        sales: Math.round(Math.max(0, monthlyAvg[i - 1] * strength)),
+                        date: `2025-${i.toString().padStart(2, '0')}`,
                         type: 'predicted'
                     });
                 }
@@ -1192,17 +1165,12 @@
                 const recentData = data.slice(-window);
                 const avgSales = recentData.reduce((sum, d) => sum + d.sales, 0) / recentData.length;
                 
-                for (let i = 1; i <= 24; i++) {
-                    const yearFactor = Math.pow(1 + trend_adj, Math.floor((i-1)/12));
-                    
-                    const year = i <= 12 ? 2025 : 2026;
-                    const month = ((i - 1) % 12) + 1;
-                    
+                for (let i = 1; i <= 12; i++) {
                     predictions.push({
-                        year: year,
-                        month: month,
-                        sales: Math.round(Math.max(0, avgSales * (1 + trend_adj) * yearFactor)),
-                        date: `${year}-${month.toString().padStart(2, '0')}`,
+                        year: 2025,
+                        month: i,
+                        sales: Math.round(Math.max(0, avgSales * (1 + trend_adj))),
+                        date: `2025-${i.toString().padStart(2, '0')}`,
                         type: 'predicted'
                     });
                 }
@@ -1217,18 +1185,15 @@
                 const trend = data.length >= 12 ? 
                     (data[data.length - 1].sales - data[data.length - 12].sales) / 12 : 0;
                 
-                for (let i = 1; i <= 24; i++) {
+                for (let i = 1; i <= 12; i++) {
                     const seasonal = 1 + gamma * Math.sin((i - 1) / 12 * 2 * Math.PI);
                     const forecast = (recentSales + trend * i) * seasonal;
                     
-                    const year = i <= 12 ? 2025 : 2026;
-                    const month = ((i - 1) % 12) + 1;
-                    
                     predictions.push({
-                        year: year,
-                        month: month,
+                        year: 2025,
+                        month: i,
                         sales: Math.round(Math.max(0, forecast)),
-                        date: `${year}-${month.toString().padStart(2, '0')}`,
+                        date: `2025-${i.toString().padStart(2, '0')}`,
                         type: 'predicted'
                     });
                 }
@@ -1297,8 +1262,9 @@
                 ];
             };
 
-            const nbeatsBlock = (input, stackType, weight, forecastLength = 24) => {
+            const nbeatsBlock = (input, stackType, weight) => {
                 const inputLength = input.length;
+                const forecastLength = 12;
                 
                 let block_forecast, block_backcast;
                 
@@ -1371,24 +1337,16 @@
 
             // 🎯 통계 계산
             const stats = useMemo(() => {
-                const totalPredicted2025 = predictions.filter(p => p.year === 2025).reduce((sum, p) => sum + p.sales, 0);
-                const totalPredicted2026 = predictions.filter(p => p.year === 2026).reduce((sum, p) => sum + p.sales, 0);
+                const totalPredicted2025 = predictions.reduce((sum, p) => sum + p.sales, 0);
                 const total2024 = aggregatedData.filter(d => d.year === 2024).reduce((sum, d) => sum + d.sales, 0);
-                
-                const growthRate2025 = total2024 > 0 ? ((totalPredicted2025 - total2024) / total2024 * 100) : 0;
-                const growthRate2026 = totalPredicted2025 > 0 ? ((totalPredicted2026 - totalPredicted2025) / totalPredicted2025 * 100) : 0;
-                
-                const totalPredicted = totalPredicted2025 + totalPredicted2026;
-                const avgMonthly = totalPredicted / 24;
+                const growthRate = total2024 > 0 ? ((totalPredicted2025 - total2024) / total2024 * 100) : 0;
+                const avgMonthly2025 = totalPredicted2025 / 12;
                 
                 return {
                     total2024,
                     totalPredicted2025,
-                    totalPredicted2026,
-                    totalPredicted,
-                    growthRate2025,
-                    growthRate2026,
-                    avgMonthly
+                    growthRate,
+                    avgMonthly2025
                 };
             }, [predictions, aggregatedData]);
 
@@ -1524,7 +1482,7 @@
                     parameters: {
                         num_blocks: { min: 2, max: 5, step: 1, suffix: "개", description: "블록 수 - 각 스택 내 블록 개수, 모델의 깊이와 복잡도 결정" },
                         stack_weight: { min: 0.1, max: 1.0, step: 0.1, suffix: "", description: "스택 가중치 - 트렌드/계절성 스택의 기여도 조절" },
-                        forecast_length: { min: 24, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간 (고정값 24개월)" },
+                        forecast_length: { min: 12, max: 12, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간 (고정값 12개월)" },
                         backcast_length: { min: 12, max: 36, step: 12, suffix: "개월", description: "백캐스트 길이 - 학습에 사용할 과거 데이터 길이" }
                     }
                 }
@@ -1598,29 +1556,16 @@
                                 <div className="stat-label">2025년 예상 매출</div>
                             </div>
                             <div className="stat-card">
+                                <div className={`stat-value ${stats.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {stats.growthRate.toFixed(1)}%
+                                </div>
+                                <div className="stat-label">성장률</div>
+                            </div>
+                            <div className="stat-card">
                                 <div className="stat-value text-indigo-600">
-                                    {stats.totalPredicted2026.toLocaleString()}억원
+                                    {stats.avgMonthly2025.toLocaleString()}억원
                                 </div>
-                                <div className="stat-label">2026년 예상 매출</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-value text-green-600">
-                                    {stats.avgMonthly.toLocaleString()}억원
-                                </div>
-                                <div className="stat-label">월 평균 매출 (24개월)</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className={`stat-value ${stats.growthRate2025 >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {stats.growthRate2025.toFixed(1)}%
-                                </div>
-                                <div className="stat-label">2025년 성장률</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className={`stat-value ${stats.growthRate2026 >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {stats.growthRate2026.toFixed(1)}%
-                                </div>
-                                <div className="stat-label">2026년 성장률</div>
-                            </div>
+                                <div className="stat-label">월 평균 매출</div>
                             </div>
                         </div>
 
@@ -1801,7 +1746,7 @@
                                 <div className="card">
                                     <div className="card-header">
                                         <i className="fas fa-table text-purple-600"></i>
-                                        <h2 className="card-title">2025-2026년 월별 예측 (24개월)</h2>
+                                        <h2 className="card-title">2025년 월별 예측</h2>
                                         <div className="text-xs text-gray-500">
                                             현재 파라메터로 생성된 예측
                                         </div>
@@ -1814,7 +1759,7 @@
                                             <table className="table">
                                                 <thead>
                                                     <tr>
-                                                        <th>연월</th>
+                                                        <th>월</th>
                                                         <th className="text-right">예측 매출 (억원)</th>
                                                         <th className="text-right">전년 동월 대비</th>
                                                         <th className="text-right">신뢰구간</th>
@@ -1823,22 +1768,15 @@
                                                 </thead>
                                                 <tbody>
                                                     {predictions.map((pred, index) => {
-                                                        // 전년 동월 데이터 찾기
-                                                        const prevYear = pred.year - 1;
-                                                        const sameMonthPrevYear = aggregatedData.find(d => 
-                                                            d.year === prevYear && d.month === pred.month
+                                                        const sameMonthLastYear = aggregatedData.find(d => 
+                                                            d.year === 2024 && d.month === pred.month
                                                         )?.sales || 0;
-                                                        
-                                                        const growth = sameMonthPrevYear > 0 ? 
-                                                            ((pred.sales - sameMonthPrevYear) / sameMonthPrevYear * 100) : 0;
+                                                        const growth = sameMonthLastYear > 0 ? 
+                                                            ((pred.sales - sameMonthLastYear) / sameMonthLastYear * 100) : 0;
 
                                                         return (
-                                                            <tr key={index} className={pred.year === 2026 ? 'bg-blue-50' : ''}>
-                                                                <td className="font-medium">
-                                                                    <span className={pred.year === 2026 ? 'text-blue-700 font-bold' : ''}>
-                                                                        {pred.year}년 {pred.month}월
-                                                                    </span>
-                                                                </td>
+                                                            <tr key={index}>
+                                                                <td className="font-medium">{pred.month}월</td>
                                                                 <td className="text-right font-bold text-blue-600">
                                                                     {pred.sales.toLocaleString()}
                                                                 </td>
@@ -1861,33 +1799,6 @@
                                                     })}
                                                 </tbody>
                                             </table>
-                                        </div>
-                                    )}
-                                    
-                                    {/* 연도별 요약 통계 */}
-                                    {!isLoading && predictions.length > 0 && (
-                                        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                                            <h4 className="font-bold text-gray-800 mb-3">📊 연도별 예측 요약</h4>
-                                            <div className="grid md:grid-cols-2 gap-4">
-                                                <div className="bg-white p-3 rounded border">
-                                                    <div className="text-lg font-bold text-purple-600">
-                                                        {stats.totalPredicted2025.toLocaleString()}억원
-                                                    </div>
-                                                    <div className="text-sm text-gray-600">2025년 총 매출</div>
-                                                    <div className={`text-xs ${stats.growthRate2025 >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                        전년 대비 {stats.growthRate2025.toFixed(1)}%
-                                                    </div>
-                                                </div>
-                                                <div className="bg-white p-3 rounded border">
-                                                    <div className="text-lg font-bold text-indigo-600">
-                                                        {stats.totalPredicted2026.toLocaleString()}억원
-                                                    </div>
-                                                    <div className="text-sm text-gray-600">2026년 총 매출</div>
-                                                    <div className={`text-xs ${stats.growthRate2026 >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                        전년 대비 {stats.growthRate2026.toFixed(1)}%
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
