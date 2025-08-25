@@ -727,7 +727,7 @@
                 nbeats_model: {
                     num_blocks: 3,
                     stack_weight: 0.5,
-                    forecast_length: 12,
+                    forecast_length: 12, // adjustable between 12 and 24 months
                     backcast_length: 24
                 }
             });
@@ -767,7 +767,7 @@
                 nbeats_model: {
                     num_blocks: 3,
                     stack_weight: 0.5,
-                    forecast_length: 12,
+                    forecast_length: 12, // adjustable between 12 and 24 months
                     backcast_length: 24
                 }
             };
@@ -1042,7 +1042,7 @@
                     
                     stack_types.forEach(stack_type => {
                         for (let block = 0; block < num_blocks; block++) {
-                            const { block_forecast, block_backcast } = nbeatsBlock(backcast, stack_type, stack_weight);
+                            const { block_forecast, block_backcast } = nbeatsBlock(backcast, stack_type, stack_weight, forecast_length);
                             
                             forecast = forecast.map((f, i) => f + block_forecast[i] * stack_weight);
                             backcast = backcast.map((b, i) => b - (block_backcast[i] || 0) * stack_weight);
@@ -1262,20 +1262,19 @@
                 ];
             };
 
-            const nbeatsBlock = (input, stackType, weight) => {
+            const nbeatsBlock = (input, stackType, weight, forecast_length) => {
                 const inputLength = input.length;
-                const forecastLength = 12;
                 
                 let block_forecast, block_backcast;
                 
                 if (stackType === 'trend') {
                     const trend = (input[inputLength - 1] - input[0]) / inputLength;
-                    block_forecast = Array.from({length: forecastLength}, (_, i) => 
+                    block_forecast = Array.from({length: forecast_length}, (_, i) =>
                         input[inputLength - 1] + trend * (i + 1) * weight
                     );
                     block_backcast = input.map((val, i) => val + trend * 0.1 * weight);
                 } else {
-                    block_forecast = Array.from({length: forecastLength}, (_, i) => 
+                    block_forecast = Array.from({length: forecast_length}, (_, i) =>
                         input[inputLength - 1] * (1 + 0.1 * Math.sin((i + 1) / 12 * 2 * Math.PI)) * weight
                     );
                     block_backcast = input.map((val, i) => 
@@ -1482,7 +1481,7 @@
                     parameters: {
                         num_blocks: { min: 2, max: 5, step: 1, suffix: "개", description: "블록 수 - 각 스택 내 블록 개수, 모델의 깊이와 복잡도 결정" },
                         stack_weight: { min: 0.1, max: 1.0, step: 0.1, suffix: "", description: "스택 가중치 - 트렌드/계절성 스택의 기여도 조절" },
-                        forecast_length: { min: 12, max: 12, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간 (고정값 12개월)" },
+                        forecast_length: { min: 12, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" },
                         backcast_length: { min: 12, max: 36, step: 12, suffix: "개월", description: "백캐스트 길이 - 학습에 사용할 과거 데이터 길이" }
                     }
                 }
