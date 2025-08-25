@@ -1332,13 +1332,15 @@
             const predictions = useMemo(() => {
                 if (aggregatedData.length === 0) return [];
                 setIsLoading(true);
-                
+
                 try {
+
+                    const params = algorithmParameters[selectedAlgorithm];
 
                     const result = algorithms[selectedAlgorithm](
                         aggregatedData,
-                        parameters[selectedAlgorithm],
-                        parameters[selectedAlgorithm].forecast_length
+                        params,
+                        params.forecast_length
                     );
                     setTimeout(() => setIsLoading(false), 500);
                     return result;
