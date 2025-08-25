@@ -693,7 +693,7 @@
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
             // 🎯 파라메터 상태 관리
-            const [parameters, setParameters] = useState({
+            const [algorithmParameters, setAlgorithmParameters] = useState({
                 advanced_ensemble: {
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
@@ -836,7 +836,7 @@
 
             // 🎯 파라메터 업데이트
             const updateParameter = useCallback((algorithm, param, value) => {
-                setParameters(prev => ({
+                setAlgorithmParameters(prev => ({
                     ...prev,
                     [algorithm]: {
                         ...prev[algorithm],
@@ -847,7 +847,7 @@
 
             // 🎯 파라메터 리셋
             const resetParameters = useCallback(() => {
-                setParameters(prev => ({
+                setAlgorithmParameters(prev => ({
                     ...prev,
                     [selectedAlgorithm]: { ...defaultParameters[selectedAlgorithm] }
                 }));
@@ -1334,6 +1334,7 @@
                 setIsLoading(true);
                 
                 try {
+
                     const result = algorithms[selectedAlgorithm](
                         aggregatedData,
                         parameters[selectedAlgorithm],
@@ -1347,7 +1348,7 @@
                     showToast('예측 중 오류가 발생했습니다.', 'error');
                     return [];
                 }
-            }, [aggregatedData, selectedAlgorithm, parameters]);
+            }, [aggregatedData, selectedAlgorithm, algorithmParameters]);
 
             // 🎯 통계 계산
             const stats = useMemo(() => {
@@ -1424,7 +1425,7 @@
                         selectedCountry,
                         selectedProduct,
                         selectedAlgorithm,
-                        JSON.stringify(parameters[selectedAlgorithm])
+                        JSON.stringify(algorithmParameters[selectedAlgorithm])
                     ])
                 ];
 
@@ -1500,7 +1501,7 @@
                     parameters: {
                         num_blocks: { min: 2, max: 5, step: 1, suffix: "개", description: "블록 수 - 각 스택 내 블록 개수, 모델의 깊이와 복잡도 결정" },
                         stack_weight: { min: 0.1, max: 1.0, step: 0.1, suffix: "", description: "스택 가중치 - 트렌드/계절성 스택의 기여도 조절" },
-                        forecast_length: { min: 12, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" },
+                        forecast_length: { min: 12, max: 24, step: 12, suffix: "개월", description: "예측 길이 - 향후 예측할 기간 (12 또는 24개월)" },
                         backcast_length: { min: 12, max: 36, step: 12, suffix: "개월", description: "백캐스트 길이 - 학습에 사용할 과거 데이터 길이" }
                     }
                 }
@@ -1530,7 +1531,7 @@
                                 <ParameterControl
                                     key={key}
                                     label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    value={parameters[selectedAlgorithm][key]}
+                                    value={algorithmParameters[selectedAlgorithm][key]}
                                     min={config.min}
                                     max={config.max}
                                     step={config.step}
@@ -1834,7 +1835,7 @@
                                             <div className="bg-white p-3 rounded-lg text-xs">
                                                 <strong>모델:</strong> {algorithmInfo[selectedAlgorithm]?.name}<br/>
                                                 <strong>파라메터:</strong><br/>
-                                                {Object.entries(parameters[selectedAlgorithm]).map(([key, value]) => (
+                                                {Object.entries(algorithmParameters[selectedAlgorithm]).map(([key, value]) => (
                                                     <div key={key} className="ml-2">
                                                         • {key}: <span className="text-blue-600 font-mono">{value}</span>
                                                     </div>
