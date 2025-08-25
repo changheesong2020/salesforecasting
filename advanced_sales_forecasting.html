@@ -691,6 +691,7 @@
             const [isLoading, setIsLoading] = useState(false);
             const [showConfidenceInterval, setShowConfidenceInterval] = useState(true);
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+            const [forecastPeriod, setForecastPeriod] = useState(12);
 
             // 🎯 파라메터 상태 관리
             const [algorithmParameters, setAlgorithmParameters] = useState({
@@ -779,6 +780,17 @@
                     backcast_length: 24
                 }
             };
+
+            // 예측 기간 변경 시 각 알고리즘의 forecast_length 동기화
+            useEffect(() => {
+                setAlgorithmParameters(prev => ({
+                    ...prev,
+                    [selectedAlgorithm]: {
+                        ...prev[selectedAlgorithm],
+                        forecast_length: forecastPeriod
+                    }
+                }));
+            }, [selectedAlgorithm, forecastPeriod]);
 
             // 🎯 샘플 데이터 생성
             const generateSampleData = useCallback(() => {
@@ -1335,12 +1347,12 @@
 
                 try {
 
-                    const params = algorithmParameters[selectedAlgorithm];
+                    const params = { ...algorithmParameters[selectedAlgorithm], forecast_length: forecastPeriod };
 
                     const result = algorithms[selectedAlgorithm](
                         aggregatedData,
                         params,
-                        params.forecast_length
+                        forecastPeriod
                     );
                     setTimeout(() => setIsLoading(false), 500);
                     return result;
@@ -1350,7 +1362,7 @@
                     showToast('예측 중 오류가 발생했습니다.', 'error');
                     return [];
                 }
-            }, [aggregatedData, selectedAlgorithm, algorithmParameters]);
+            }, [aggregatedData, selectedAlgorithm, algorithmParameters, forecastPeriod]);
 
             // 🎯 통계 계산
             const stats = useMemo(() => {
@@ -1529,19 +1541,21 @@
                         </div>
                         
                         <div className="parameter-grid">
-                            {Object.entries(info.parameters).map(([key, config]) => (
-                                <ParameterControl
-                                    key={key}
-                                    label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    value={algorithmParameters[selectedAlgorithm][key]}
-                                    min={config.min}
-                                    max={config.max}
-                                    step={config.step}
-                                    suffix={config.suffix}
-                                    description={config.description}
-                                    onChange={(value) => updateParameter(selectedAlgorithm, key, value)}
-                                />
-                            ))}
+                            {Object.entries(info.parameters)
+                                .filter(([key]) => key !== 'forecast_length')
+                                .map(([key, config]) => (
+                                    <ParameterControl
+                                        key={key}
+                                        label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                        value={algorithmParameters[selectedAlgorithm][key]}
+                                        min={config.min}
+                                        max={config.max}
+                                        step={config.step}
+                                        suffix={config.suffix}
+                                        description={config.description}
+                                        onChange={(value) => updateParameter(selectedAlgorithm, key, value)}
+                                    />
+                                ))}
                         </div>
                     </div>
                 );
@@ -1677,7 +1691,7 @@
                                     <div className="space-y-4">
                                         <div className="form-group">
                                             <label className="form-label">예측 모델 선택</label>
-                                            <select 
+                                            <select
                                                 value={selectedAlgorithm}
                                                 onChange={(e) => setSelectedAlgorithm(e.target.value)}
                                                 className="form-select"
@@ -1691,6 +1705,19 @@
                                                     <option value="gradient_boosting">그라디언트 부스팅</option>
                                                     <option value="nbeats_model">N-BEATS</option>
                                                 </optgroup>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">예측 기간</label>
+                                            <select
+                                                value={forecastPeriod}
+                                                onChange={(e) => setForecastPeriod(parseInt(e.target.value))}
+                                                className="form-select"
+                                                disabled={isLoading}
+                                            >
+                                                <option value={12}>12개월</option>
+                                                <option value={24}>24개월</option>
                                             </select>
                                         </div>
 
