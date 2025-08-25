@@ -698,7 +698,8 @@
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
                     ma_weight: 0.2,
-                    exp_weight: 0.2
+                    exp_weight: 0.2,
+                    forecast_length: 12
                 },
                 transformer_model: {
                     attention_heads: 8,
@@ -741,7 +742,8 @@
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
                     ma_weight: 0.2,
-                    exp_weight: 0.2
+                    exp_weight: 0.2,
+                    forecast_length: 12
                 },
                 transformer_model: {
                     attention_heads: 8,
@@ -857,7 +859,7 @@
                 // 🚀 고급 앙상블
                 advanced_ensemble: (data, params) => {
                     if (data.length === 0) return [];
-                    
+
                     const predictions = [];
                     const weights = {
                         trend: params.trend_weight,
@@ -865,15 +867,16 @@
                         ma: params.ma_weight,
                         exp: params.exp_weight
                     };
-                    
+                    const forecast_length = params.forecast_length;
+
                     // 다중 모델 예측
-                    const trendPred = linearTrend(data, { growth_rate: 0.06, seasonal_factor: 0.12 });
-                    const seasonalPred = seasonalDecompose(data, { strength: 0.8 });
-                    const maPred = movingAverage(data, { window: 8, trend_adj: 0.04 });
-                    const expPred = exponentialSmoothing(data, { alpha: 0.4, beta: 0.3, gamma: 0.3 });
-                    
-                    for (let i = 0; i < 12; i++) {
-                        const ensembleValue = 
+                    const trendPred = linearTrend(data, { growth_rate: 0.06, seasonal_factor: 0.12 }, forecast_length);
+                    const seasonalPred = seasonalDecompose(data, { strength: 0.8 }, forecast_length);
+                    const maPred = movingAverage(data, { window: 8, trend_adj: 0.04 }, forecast_length);
+                    const expPred = exponentialSmoothing(data, { alpha: 0.4, beta: 0.3, gamma: 0.3 }, forecast_length);
+
+                    for (let i = 0; i < forecast_length; i++) {
+                        const ensembleValue =
                             (trendPred[i]?.sales || 0) * weights.trend +
                             (seasonalPred[i]?.sales || 0) * weights.seasonal +
                             (maPred[i]?.sales || 0) * weights.ma +
@@ -1124,15 +1127,15 @@
             const sigmoid = (x) => 1 / (1 + Math.exp(-x));
 
             // 기본 알고리즘들
-            const linearTrend = (data, params) => {
+            const linearTrend = (data, params, forecast_length) => {
                 const { growth_rate, seasonal_factor } = params;
                 const predictions = [];
                 const recentSales = data.slice(-6).reduce((sum, d) => sum + d.sales, 0) / 6;
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     const seasonal = 1 + seasonal_factor * Math.sin((i - 1) / 12 * 2 * Math.PI);
                     const predicted = recentSales * (1 + growth_rate) * seasonal;
-                    
+
                     predictions.push({
                         year: 2025,
                         month: i,
@@ -1144,22 +1147,22 @@
                 return predictions;
             };
 
-            const seasonalDecompose = (data, params) => {
+            const seasonalDecompose = (data, params, forecast_length) => {
                 const predictions = [];
                 const { strength } = params;
-                
+
                 const monthlyAvg = Array(12).fill(0).map((_, month) => {
                     const monthData = data.filter(d => d.month === month + 1);
-                    return monthData.length > 0 
+                    return monthData.length > 0
                         ? monthData.reduce((sum, d) => sum + d.sales, 0) / monthData.length
                         : 0;
                 });
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     predictions.push({
                         year: 2025,
                         month: i,
-                        sales: Math.round(Math.max(0, monthlyAvg[i - 1] * strength)),
+                        sales: Math.round(Math.max(0, monthlyAvg[(i - 1) % 12] * strength)),
                         date: `2025-${i.toString().padStart(2, '0')}`,
                         type: 'predicted'
                     });
@@ -1167,13 +1170,13 @@
                 return predictions;
             };
 
-            const movingAverage = (data, params) => {
+            const movingAverage = (data, params, forecast_length) => {
                 const { window, trend_adj } = params;
                 const predictions = [];
                 const recentData = data.slice(-window);
                 const avgSales = recentData.reduce((sum, d) => sum + d.sales, 0) / recentData.length;
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     predictions.push({
                         year: 2025,
                         month: i,
@@ -1185,18 +1188,18 @@
                 return predictions;
             };
 
-            const exponentialSmoothing = (data, params) => {
+            const exponentialSmoothing = (data, params, forecast_length) => {
                 const { alpha, beta, gamma } = params;
                 const predictions = [];
-                
+
                 const recentSales = data[data.length - 1].sales;
-                const trend = data.length >= 12 ? 
+                const trend = data.length >= 12 ?
                     (data[data.length - 1].sales - data[data.length - 12].sales) / 12 : 0;
-                
-                for (let i = 1; i <= 12; i++) {
+
+                for (let i = 1; i <= forecast_length; i++) {
                     const seasonal = 1 + gamma * Math.sin((i - 1) / 12 * 2 * Math.PI);
                     const forecast = (recentSales + trend * i) * seasonal;
-                    
+
                     predictions.push({
                         year: 2025,
                         month: i,
@@ -1444,7 +1447,8 @@
                         trend_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "추세 모델의 가중치 - 데이터의 장기적 증가/감소 패턴 반영 정도" },
                         seasonal_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "계절성 모델의 가중치 - 월별/분기별 반복 패턴 반영 정도" },
                         ma_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "이동평균 모델의 가중치 - 최근 평균값 기반 안정적 예측 반영 정도" },
-                        exp_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "지수평활 모델의 가중치 - 최근 데이터에 더 높은 가중치를 둔 예측 반영 정도" }
+                        exp_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "지수평활 모델의 가중치 - 최근 데이터에 더 높은 가중치를 둔 예측 반영 정도" },
+                        forecast_length: { min: 1, max: 12, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 transformer_model: {
