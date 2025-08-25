@@ -704,7 +704,8 @@
                     attention_heads: 8,
                     model_dim: 64,
                     learning_rate: 0.001,
-                    sequence_length: 12
+                    sequence_length: 12,
+                    forecast_length: 12
                 },
                 gru_network: {
                     hidden_size: 50,
@@ -746,7 +747,8 @@
                     attention_heads: 8,
                     model_dim: 64,
                     learning_rate: 0.001,
-                    sequence_length: 12
+                    sequence_length: 12,
+                    forecast_length: 12
                 },
                 gru_network: {
                     hidden_size: 50,
@@ -893,7 +895,7 @@
                 transformer_model: (data, params) => {
                     if (data.length < 24) return [];
                     
-                    const { attention_heads, model_dim, learning_rate, sequence_length } = params;
+                    const { attention_heads, model_dim, learning_rate, sequence_length, forecast_length } = params;
                     const predictions = [];
                     
                     const sales = data.map(d => d.sales);
@@ -901,10 +903,10 @@
                     const sequences = createSequences(normalized, sequence_length);
                     
                     // Self-Attention 메커니즘 시뮬레이션
-                    const attention_weights = calculateAttentionWeights(sequences, attention_heads);
+                    const attention_weights = calculateAttentionWeights(sequences, attention_heads, forecast_length);
                     
-                    for (let i = 1; i <= 12; i++) {
-                        const context_vector = applyAttention(sequences.slice(-sequence_length), attention_weights);
+                    for (let i = 1; i <= forecast_length; i++) {
+                        const context_vector = applyAttention(sequences.slice(-sequence_length), attention_weights, forecast_length);
                         const base_prediction = context_vector.reduce((sum, val, idx) => sum + val * (1 - idx * learning_rate), 0);
                         
                         const seasonal_factor = 1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI + Math.PI/4);
@@ -1091,15 +1093,16 @@
                 return sequences;
             };
 
-            const calculateAttentionWeights = (sequences, heads) => {
-                return Array(heads).fill().map(() => 
-                    Array(12).fill().map(() => Math.random())
+            const calculateAttentionWeights = (sequences, heads, forecast_length) => {
+                return Array(heads).fill().map(() =>
+                    Array(forecast_length).fill().map(() => Math.random())
                 );
             };
 
-            const applyAttention = (sequences, weights) => {
-                const last_seq = sequences[sequences.length - 1] || Array(12).fill(0);
-                return last_seq.map(val => val * (0.8 + Math.random() * 0.4));
+            const applyAttention = (sequences, weights, forecast_length) => {
+                const last_seq = sequences[sequences.length - 1] || [];
+                const seq = Array(forecast_length).fill(0).map((_, i) => last_seq[i] || 0);
+                return seq.map(val => val * (0.8 + Math.random() * 0.4));
             };
 
             const gruCell = (input, hidden, dropout) => {
@@ -1451,7 +1454,8 @@
                         attention_heads: { min: 4, max: 16, step: 2, suffix: "개", description: "어텐션 헤드 수 - 다양한 관점에서 패턴을 학습하는 병렬 처리 단위 수" },
                         model_dim: { min: 32, max: 128, step: 16, suffix: "", description: "모델 차원 - 내부 표현의 복잡도와 학습 용량을 결정" },
                         learning_rate: { min: 0.0001, max: 0.01, step: 0.0001, suffix: "", description: "학습률 - 모델이 패턴을 학습하는 속도, 너무 높으면 불안정" },
-                        sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이 - 예측을 위해 참고하는 과거 데이터 기간" }
+                        sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이 - 예측을 위해 참고하는 과거 데이터 기간" },
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 gru_network: {
