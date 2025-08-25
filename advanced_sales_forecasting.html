@@ -1366,14 +1366,16 @@
 
             // 🎯 통계 계산
             const stats = useMemo(() => {
-                const totalPredicted2025 = predictions.reduce((sum, p) => sum + p.sales, 0);
+                const totalPredicted = predictions.reduce((sum, p) => sum + p.sales, 0);
+                const predicted2025 = predictions.slice(0, 12).reduce((sum, p) => sum + p.sales, 0);
                 const total2024 = aggregatedData.filter(d => d.year === 2024).reduce((sum, d) => sum + d.sales, 0);
-                const growthRate = total2024 > 0 ? ((totalPredicted2025 - total2024) / total2024 * 100) : 0;
-                const avgMonthly2025 = totalPredicted2025 / 12;
-                
+                const growthRate = total2024 > 0 ? ((predicted2025 - total2024) / total2024 * 100) : 0;
+                const avgMonthly2025 = predicted2025 / 12;
+
                 return {
                     total2024,
-                    totalPredicted2025,
+                    totalPredicted,
+                    predicted2025,
                     growthRate,
                     avgMonthly2025
                 };
@@ -1586,10 +1588,18 @@
                             </div>
                             <div className="stat-card">
                                 <div className="stat-value text-purple-600">
-                                    {stats.totalPredicted2025.toLocaleString()}억원
+                                    {stats.predicted2025.toLocaleString()}억원
                                 </div>
                                 <div className="stat-label">2025년 예상 매출</div>
                             </div>
+                            {forecastPeriod === 24 && (
+                                <div className="stat-card">
+                                    <div className="stat-value text-pink-600">
+                                        {stats.totalPredicted.toLocaleString()}억원
+                                    </div>
+                                    <div className="stat-label">총 24개월 예상 매출</div>
+                                </div>
+                            )}
                             <div className="stat-card">
                                 <div className={`stat-value ${stats.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {stats.growthRate.toFixed(1)}%
