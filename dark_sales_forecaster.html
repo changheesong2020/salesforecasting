@@ -1450,13 +1450,28 @@
                                     )}
                                 </div>
 
-                                {/* 기능 안내 */}
+                                                                {/* 기능 안내 */}
                                 <div className="card" style={{background: 'linear-gradient(135deg, rgba(30, 30, 50, 0.8) 0%, rgba(25, 25, 40, 0.8) 100%)'}}>
                                     <div className="card-header">
                                         <i className="fas fa-star text-purple-600"></i>
                                         <h2 className="card-title">다크모드 Pro 기능</h2>
                                     </div>
-                                    
+
                                     <div className="grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))'}}>
-                                        <div>
-                                            
+                                        <div className="text-sm text-gray-500">
+                                            업데이트 예정
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 앱 렌더링
+        ReactDOM.render(<DarkSalesForecastingApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
