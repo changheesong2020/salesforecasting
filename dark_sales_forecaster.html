@@ -1450,30 +1450,54 @@
                                     )}
                                 </div>
 
+                                  
 
-                                <div className="card" style={{background: 'linear-gradient(135deg, rgba(30, 30, 50, 0.8) 0%, rgba(25, 25, 40, 0.8) 100%)'}}>
+ {/* 파라메터 현황 및 튜닝 가이드 */}
+                                <div className="card" >
                                     <div className="card-header">
-                                        <i className="fas fa-sliders-h text-purple-600"></i>
-                                        <h2 className="card-title">파라미터 튜닝 가이드</h2>
+                                        <i className="fas fa-cogs text-blue-600"></i>
+                                        <h2 className="card-title">🎛️ 파라메터 튜닝 가이드</h2>
                                     </div>
-
- codex/fix-dark_sales_forecaster.html-4ruvf6
-                                    <div className="space-y-4">
-                                        {Object.entries(algorithmInfo).map(([algKey, info]) => (
-                                            <div key={algKey}>
-                                                <h3 className="font-medium mb-2" style={{color: '#e2e8f0'}}>{info.name}</h3>
-                                                <ul className="text-sm text-gray-400 space-y-1">
-                                                    {Object.entries(info.parameters).map(([paramKey, config]) => (
-                                                        <li key={paramKey}>
-                                                            <span className="text-gray-200">
-                                                                {paramKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: {defaultParameters[algKey][paramKey]}{config.suffix}
-                                                            </span>
-                                                            <span className="ml-2 text-gray-500">{config.description}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                    
+                                    <div className="grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))'}}>
+                                        <div>
+                                            <h4 className="font-bold text-blue-700 mb-2">🎯 현재 설정</h4>
+                                            <div className="bg-white p-3 rounded-lg text-xs">
+                                                <strong>모델:</strong> {algorithmInfo[selectedAlgorithm]?.name}<br/>
+                                                <strong>파라메터:</strong><br/>
+                                                {Object.entries(algorithmParameters[selectedAlgorithm]).map(([key, value]) => (
+                                                    <div key={key} className="ml-2">
+                                                        • {key}: <span className="text-blue-600 font-mono">{value}</span>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 className="font-bold text-purple-700 mb-2">💡 튜닝 팁</h4>
+                                            <ul className="text-sm text-purple-600 space-y-1">
+                                                <li>• 과적합 발생시 → 복잡도 관련 파라메터 감소</li>
+                                                <li>• 과소적합 발생시 → 모델 용량 관련 파라메터 증가</li>
+                                                <li>• 불안정한 예측시 → 학습률/가중치 조정</li>
+                                                <li>• 계절성 미반영시 → 계절성 관련 파라메터 증가</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-4 p-4 bg-white rounded-lg border-l-4 border-green-500">
+                                        <h4 className="font-bold text-gray-800 mb-2">📋 CSV 파일 형식 예시</h4>
+                                        <div className="bg-gray-100 rounded p-3 text-xs font-mono">
+                                            year,month,country,product,sales<br/>
+                                            2019,1,한국,제품A,150<br/>
+                                            2019,1,한국,제품B,120<br/>
+                                            2019,1,미국,제품A,280<br/>
+                                            2020,1,한국,제품A,165<br/>
+                                            ...
+                                        </div>
+                                        <p className="text-xs text-gray-600 mt-2">
+                                            <strong>필수 컬럼:</strong> year(연도), month(월), sales(매출)<br/>
+                                            <strong>선택 컬럼:</strong> country(국가), product(제품)
+                                        </p>
 
                                     </div>
                                 </div>
