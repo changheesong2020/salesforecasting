@@ -49,7 +49,8 @@ git clone https://github.com/your-repo/sales-forecast-simulator.git
 cd sales-forecast-simulator
 
 # 필요한 패키지 설치
-없음 
+pip install -r requirements.txt
 
-# 실행
-html 파일 브라우저에서 실행
+# Flask 서버 실행
+python app.py
+```
