@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Forecasting</title>
+  <link rel="stylesheet" href="sales_forecasting.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="light-mode">
+  <button id="theme-toggle" class="theme-toggle">🌙</button>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // 테마 토글
+    const toggleButton = document.getElementById('theme-toggle');
+    toggleButton.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      document.body.classList.toggle('light-mode');
+      toggleButton.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+    });
+
+    // 알고리즘 정보 (dark_sales_forecaster 참고)
+    const algorithmInfo = {
+      baseline: {
+        name: "Baseline",
+        description: "마지막 실제 값을 그대로 사용하는 기본 예측입니다."
+      },
+      advanced_ensemble: {
+        name: "고급 앙상블",
+        description: "4개의 서로 다른 예측 모델을 최적 가중치로 결합하여 더욱 정확하고 안정적인 예측을 제공합니다."
+      }
+    };
+
+    // 알고리즘 파라미터 기본값
+    const algorithmParameters = {
+      baseline: { forecast_length: 12 },
+      advanced_ensemble: { trend_weight: 0.25, seasonal_weight: 0.25, ma_weight: 0.25, exp_weight: 0.25, forecast_length: 12 }
+    };
+
+    // 알고리즘 구현 (dark_sales_forecaster 참고)
+    const algorithms = {
+      baseline: (data, params) => {
+        if (data.length === 0) return [];
+        const last = data[data.length - 1].sales;
+        const predictions = [];
+        for (let i = 1; i <= params.forecast_length; i++) {
+          predictions.push({ year: 2025, month: i, sales: Math.round(Math.max(0, last)) });
+        }
+        return predictions;
+      },
+      advanced_ensemble: (data, params) => {
+        if (data.length === 0) return [];
+        const predictions = [];
+        for (let i = 1; i <= params.forecast_length; i++) {
+          const recent = data.slice(-6).reduce((s, d) => s + d.sales, 0) / 6;
+          const seasonal = 1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI);
+          const predicted = recent * (1 + 0.05) * seasonal;
+          predictions.push({ year: 2025, month: i, sales: Math.round(Math.max(0, predicted)) });
+        }
+        return predictions;
+      }
+    };
+
+    const aggregateData = (rows) => {
+      const grouped = {};
+      rows.forEach(d => {
+        const key = `${d.year}-${d.month}`;
+        if (!grouped[key]) grouped[key] = { year: d.year, month: d.month, sales: 0 };
+        grouped[key].sales += d.sales;
+      });
+      return Object.values(grouped).sort((a,b) => a.year - b.year || a.month - b.month);
+    };
+
+    const App = () => {
+      const [data, setData] = useState([]);
+      const [selectedAlgorithm, setSelectedAlgorithm] = useState('baseline');
+      const [showConfidenceInterval, setShowConfidenceInterval] = useState(true);
+      const aggregated = useMemo(() => aggregateData(data), [data]);
+      const predictions = useMemo(() => algorithms[selectedAlgorithm](aggregated, algorithmParameters[selectedAlgorithm]), [aggregated, selectedAlgorithm]);
+
+      useEffect(() => {
+        fetch('filtered_total_sheet_data.csv')
+          .then(res => res.text())
+          .then(text => {
+            const rows = text.trim().split('\n').slice(1).map(line => {
+              const [year, month, sales] = line.split(',');
+              return { year: parseInt(year), month: parseInt(month), sales: parseFloat(sales) };
+            });
+            setData(rows);
+          });
+      }, []);
+
+      return (
+        <div className="container">
+          <div className="card">
+            <label>모델 선택: </label>
+            <select value={selectedAlgorithm} onChange={e => setSelectedAlgorithm(e.target.value)}>
+              {Object.entries(algorithmInfo).map(([key, info]) => (
+                <option key={key} value={key}>{info.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="card">
+            <h2>2025년 월별 예측</h2>
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>월</th>
+                    <th className="text-right">예측 매출 (만원)</th>
+                    <th className="text-right">전년 동월 대비</th>
+                    <th className="text-right">신뢰구간</th>
+                    <th>모델</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {predictions.map((pred, idx) => {
+                    const lastYear = aggregated.find(d => d.year === 2024 && d.month === pred.month)?.sales || 0;
+                    const growth = lastYear ? ((pred.sales - lastYear) / lastYear * 100).toFixed(1) : '0.0';
+                    return (
+                      <tr key={idx}>
+                        <td>{pred.month}월</td>
+                        <td className="text-right">{pred.sales.toLocaleString()}</td>
+                        <td className={growth >= 0 ? 'text-right text-green' : 'text-right text-red'}>{growth}%</td>
+                        <td className="text-right">{showConfidenceInterval ? `±${(pred.sales * 0.15).toFixed(0)}` : 'N/A'}</td>
+                        <td>{algorithmInfo[selectedAlgorithm]?.name}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

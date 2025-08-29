@@ -1,0 +1,12 @@
+body { font-family: Arial, sans-serif; margin: 20px; }
+body.light-mode { --bg-color: #ffffff; --text-color: #1f2937; --card-bg:#f9fafb; --header-bg:#e5e7eb; --border-color:#d1d5db; --positive:#16a34a; --negative:#dc2626; }
+body.dark-mode { --bg-color: #1f2937; --text-color: #f1f5f9; --card-bg:#374151; --header-bg:#4b5563; --border-color:#6b7280; --positive:#4ade80; --negative:#f87171; }
+body { background: var(--bg-color); color: var(--text-color); }
+button.theme-toggle { position: fixed; top: 10px; right: 10px; padding: 8px; }
+.card { background: var(--card-bg); padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 8px; border-bottom: 1px solid var(--border-color); }
+.table th { background: var(--header-bg); text-align: left; }
+.text-right { text-align: right; }
+.text-green { color: var(--positive); }
+.text-red { color: var(--negative); }

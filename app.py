@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return send_file('advanced_sales_forecasting.html')
+    return send_file('sales_forecasting.html')
 
 
 @app.route('/favicon.svg')
