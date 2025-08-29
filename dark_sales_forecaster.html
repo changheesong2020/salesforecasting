@@ -806,14 +806,6 @@
                     use_lstm: 0,
                     forecast_length: 12
                 },
-                light_transformer: {
-                    sequence_length: 12,
-                    d_model: 64,
-                    num_heads: 4,
-                    epochs: 50,
-                    learning_rate: 0.001,
-                    forecast_length: 12
-                },
                 advanced_ensemble: {
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
@@ -855,14 +847,6 @@
                     epochs: 50,
                     learning_rate: 0.01,
                     use_lstm: 0,
-                    forecast_length: 12
-                },
-                light_transformer: {
-                    sequence_length: 12,
-                    d_model: 64,
-                    num_heads: 4,
-                    epochs: 50,
-                    learning_rate: 0.001,
                     forecast_length: 12
                 },
                 advanced_ensemble: {
@@ -1066,51 +1050,6 @@
                     model.dispose();
                     return predictions;
                 },
-
-                light_transformer: async (data, params) => {
-                    const { sequence_length, d_model, num_heads, epochs, learning_rate, forecast_length } = params;
-                    const sales = data.map(d => d.sales);
-                    if (sales.length <= sequence_length) return [];
-                    const xs = [];
-                    const ys = [];
-                    for (let i = sequence_length; i < sales.length; i++) {
-                        xs.push(sales.slice(i - sequence_length, i));
-                        ys.push(sales[i]);
-                    }
-                    const xsTensor = tf.tensor3d(xs.map(seq => seq.map(v => [v])), [xs.length, sequence_length, 1]);
-                    const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
-                    const input = tf.input({ shape: [sequence_length, 1] });
-                    const mha = tf.layers.multiHeadAttention({ numHeads: num_heads, keyDim: d_model / num_heads }).apply({
-                        query: input,
-                        key: input,
-                        value: input
-                    });
-                    const flat = tf.layers.flatten().apply(mha);
-                    const dense = tf.layers.dense({ units: 1 }).apply(flat);
-                    const model = tf.model({ inputs: input, outputs: dense });
-                    model.compile({ optimizer: tf.train.adam(learning_rate), loss: 'meanSquaredError' });
-                    await model.fit(xsTensor, ysTensor, { epochs });
-                    xsTensor.dispose();
-                    ysTensor.dispose();
-                    const predictions = [];
-                    let inputSeq = sales.slice(-sequence_length);
-                    for (let i = 1; i <= forecast_length; i++) {
-                        const predTensor = model.predict(tf.tensor3d([inputSeq.map(v => [v])], [1, sequence_length, 1]));
-                        const pred = (await predTensor.array())[0][0];
-                        predTensor.dispose();
-                        predictions.push({
-                            year: 2025,
-                            month: i,
-                            sales: Math.round(Math.max(0, pred)),
-                            date: `2025-${i.toString().padStart(2, '0')}`,
-                            type: 'predicted'
-                        });
-                        inputSeq = [...inputSeq.slice(1), pred];
-                    }
-                    model.dispose();
-                    return predictions;
-                },
-
                 advanced_ensemble: (data, params) => {
                     if (data.length === 0) return [];
                     const predictions = [];
@@ -1347,18 +1286,6 @@
                         forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이" }
                     }
                 },
-                light_transformer: {
-                    name: "경량 Transformer",
-                    description: "간단한 Self-Attention 구조를 사용하는 Transformer 모델입니다.",
-                    parameters: {
-                        sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스" },
-                        d_model: { min: 32, max: 128, step: 16, suffix: "", description: "모델 차원" },
-                        num_heads: { min: 2, max: 8, step: 2, suffix: "개", description: "어텐션 헤드 수" },
-                        epochs: { min: 10, max: 100, step: 10, suffix: "회", description: "학습 반복" },
-                        learning_rate: { min: 0.0001, max: 0.01, step: 0.0001, suffix: "", description: "학습률" },
-                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이" }
-                    }
-                },
                 advanced_ensemble: {
                     name: "고급 앙상블",
                     description: "4개의 서로 다른 예측 모델을 최적 가중치로 결합하여 더욱 정확하고 안정적인 예측을 제공합니다.",
@@ -1569,7 +1496,6 @@
                                                     <option value="baseline">Baseline</option>
                                                     <option value="lag_mlp">Lag 회귀 (MLP)</option>
                                                     <option value="gru_lstm">GRU/LSTM</option>
-                                                    <option value="light_transformer">경량 Transformer</option>
                                                 </optgroup>
                                                 <optgroup label="고급 AI 모델">
                                                     <option value="advanced_ensemble">고급 앙상블</option>
