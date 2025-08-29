@@ -8,6 +8,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -783,50 +784,104 @@
             const [showConfidenceInterval, setShowConfidenceInterval] = useState(true);
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             const [forecastPeriod, setForecastPeriod] = useState(12);
+            const [predictions, setPredictions] = useState([]);
 
             // 파라미터 상태 관리
             const [algorithmParameters, setAlgorithmParameters] = useState({
+                baseline: {
+                    forecast_length: 12
+                },
+                lag_mlp: {
+                    lags: 12,
+                    hidden_units: 64,
+                    epochs: 50,
+                    learning_rate: 0.01,
+                    forecast_length: 12
+                },
+                gru_lstm: {
+                    sequence_length: 12,
+                    hidden_units: 64,
+                    epochs: 50,
+                    learning_rate: 0.01,
+                    use_lstm: 0,
+                    forecast_length: 12
+                },
                 advanced_ensemble: {
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
                     ma_weight: 0.2,
-                    exp_weight: 0.2
+                    exp_weight: 0.2,
+                    forecast_length: 12
                 },
                 transformer_model: {
                     attention_heads: 8,
                     model_dim: 64,
                     learning_rate: 0.001,
-                    sequence_length: 12
+                    sequence_length: 12,
+                    forecast_length: 12
                 },
                 gru_network: {
                     hidden_size: 50,
                     sequence_length: 12,
                     learning_rate: 0.01,
-                    dropout_rate: 0.2
+                    dropout_rate: 0.2,
+                    forecast_length: 12
                 }
             });
 
             // 기본값 설정
             const defaultParameters = {
+                baseline: {
+                    forecast_length: 12
+                },
+                lag_mlp: {
+                    lags: 12,
+                    hidden_units: 64,
+                    epochs: 50,
+                    learning_rate: 0.01,
+                    forecast_length: 12
+                },
+                gru_lstm: {
+                    sequence_length: 12,
+                    hidden_units: 64,
+                    epochs: 50,
+                    learning_rate: 0.01,
+                    use_lstm: 0,
+                    forecast_length: 12
+                },
                 advanced_ensemble: {
                     trend_weight: 0.3,
                     seasonal_weight: 0.3,
                     ma_weight: 0.2,
-                    exp_weight: 0.2
+                    exp_weight: 0.2,
+                    forecast_length: 12
                 },
                 transformer_model: {
                     attention_heads: 8,
                     model_dim: 64,
                     learning_rate: 0.001,
-                    sequence_length: 12
+                    sequence_length: 12,
+                    forecast_length: 12
                 },
                 gru_network: {
                     hidden_size: 50,
                     sequence_length: 12,
                     learning_rate: 0.01,
-                    dropout_rate: 0.2
+                    dropout_rate: 0.2,
+                    forecast_length: 12
                 }
             };
+
+            // 예측 기간 변경 시 각 알고리즘의 forecast_length 동기화
+            useEffect(() => {
+                setAlgorithmParameters(prev => ({
+                    ...prev,
+                    [selectedAlgorithm]: {
+                        ...prev[selectedAlgorithm],
+                        forecast_length: forecastPeriod
+                    }
+                }));
+            }, [selectedAlgorithm, forecastPeriod]);
 
             // 샘플 데이터 생성
             const generateSampleData = useCallback(() => {
@@ -904,21 +959,111 @@
 
             // 고급 알고리즘들
             const algorithms = {
+                baseline: async (data, params) => {
+                    const last = data[data.length - 1]?.sales || 0;
+                    const predictions = [];
+                    for (let i = 1; i <= params.forecast_length; i++) {
+                        predictions.push({
+                            year: 2025,
+                            month: i,
+                            sales: Math.round(Math.max(0, last)),
+                            date: `2025-${i.toString().padStart(2, '0')}`,
+                            type: 'predicted'
+                        });
+                    }
+                    return predictions;
+                },
+
+                lag_mlp: async (data, params) => {
+                    const { lags, hidden_units, epochs, learning_rate, forecast_length } = params;
+                    const sales = data.map(d => d.sales);
+                    if (sales.length <= lags) return [];
+                    const xs = [];
+                    const ys = [];
+                    for (let i = lags; i < sales.length; i++) {
+                        xs.push(sales.slice(i - lags, i));
+                        ys.push(sales[i]);
+                    }
+                    const xsTensor = tf.tensor2d(xs);
+                    const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
+                    const model = tf.sequential();
+                    model.add(tf.layers.dense({ inputShape: [lags], units: hidden_units, activation: 'relu' }));
+                    model.add(tf.layers.dense({ units: 1 }));
+                    model.compile({ optimizer: tf.train.adam(learning_rate), loss: 'meanSquaredError' });
+                    await model.fit(xsTensor, ysTensor, { epochs });
+                    xsTensor.dispose();
+                    ysTensor.dispose();
+                    const predictions = [];
+                    let input = sales.slice(-lags);
+                    for (let i = 1; i <= forecast_length; i++) {
+                        const predTensor = model.predict(tf.tensor2d([input]));
+                        const pred = (await predTensor.array())[0][0];
+                        predTensor.dispose();
+                        predictions.push({
+                            year: 2025,
+                            month: i,
+                            sales: Math.round(Math.max(0, pred)),
+                            date: `2025-${i.toString().padStart(2, '0')}`,
+                            type: 'predicted'
+                        });
+                        input = [...input.slice(1), pred];
+                    }
+                    model.dispose();
+                    return predictions;
+                },
+
+                gru_lstm: async (data, params) => {
+                    const { sequence_length, hidden_units, epochs, learning_rate, use_lstm, forecast_length } = params;
+                    const sales = data.map(d => d.sales);
+                    if (sales.length <= sequence_length) return [];
+                    const xs = [];
+                    const ys = [];
+                    for (let i = sequence_length; i < sales.length; i++) {
+                        xs.push(sales.slice(i - sequence_length, i));
+                        ys.push(sales[i]);
+                    }
+                    const xsTensor = tf.tensor3d(xs.map(seq => seq.map(v => [v])), [xs.length, sequence_length, 1]);
+                    const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
+                    const model = tf.sequential();
+                    const rnnLayer = use_lstm ? tf.layers.lstm({ units: hidden_units, inputShape: [sequence_length, 1] }) : tf.layers.gru({ units: hidden_units, inputShape: [sequence_length, 1] });
+                    model.add(rnnLayer);
+                    model.add(tf.layers.dense({ units: 1 }));
+                    model.compile({ optimizer: tf.train.adam(learning_rate), loss: 'meanSquaredError' });
+                    await model.fit(xsTensor, ysTensor, { epochs });
+                    xsTensor.dispose();
+                    ysTensor.dispose();
+                    const predictions = [];
+                    let input = sales.slice(-sequence_length);
+                    for (let i = 1; i <= forecast_length; i++) {
+                        const predTensor = model.predict(tf.tensor3d([input.map(v => [v])], [1, sequence_length, 1]));
+                        const pred = (await predTensor.array())[0][0];
+                        predTensor.dispose();
+                        predictions.push({
+                            year: 2025,
+                            month: i,
+                            sales: Math.round(Math.max(0, pred)),
+                            date: `2025-${i.toString().padStart(2, '0')}`,
+                            type: 'predicted'
+                        });
+                        input = [...input.slice(1), pred];
+                    }
+                    model.dispose();
+                    return predictions;
+                },
+
                 advanced_ensemble: (data, params) => {
                     if (data.length === 0) return [];
                     const predictions = [];
                     const weights = params;
-                    
-                    for (let i = 1; i <= forecastPeriod; i++) {
+                    for (let i = 1; i <= params.forecast_length; i++) {
                         const recentSales = data.slice(-6).reduce((sum, d) => sum + d.sales, 0) / 6;
                         const seasonal = 1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI);
                         const predicted = recentSales * (1 + 0.05) * seasonal;
-                        
                         predictions.push({
                             year: 2025,
-                            month: i > 12 ? i - 12 : i,
+                            month: i,
                             sales: Math.round(Math.max(0, predicted)),
-                            date: `${i > 12 ? 2026 : 2025}-${(i > 12 ? i - 12 : i).toString().padStart(2, '0')}`,
+                            date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -928,17 +1073,15 @@
                 transformer_model: (data, params) => {
                     if (data.length < 24) return [];
                     const predictions = [];
-                    
-                    for (let i = 1; i <= forecastPeriod; i++) {
+                    for (let i = 1; i <= params.forecast_length; i++) {
                         const recentSales = data.slice(-params.sequence_length).reduce((sum, d) => sum + d.sales, 0) / params.sequence_length;
                         const seasonal = 1 + 0.12 * Math.sin((i - 1) / 12 * 2 * Math.PI);
                         const predicted = recentSales * (1 + 0.06) * seasonal;
-                        
                         predictions.push({
                             year: 2025,
-                            month: i > 12 ? i - 12 : i,
+                            month: i,
                             sales: Math.round(Math.max(0, predicted)),
-                            date: `${i > 12 ? 2026 : 2025}-${(i > 12 ? i - 12 : i).toString().padStart(2, '0')}`,
+                            date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -948,17 +1091,15 @@
                 gru_network: (data, params) => {
                     if (data.length < 24) return [];
                     const predictions = [];
-                    
-                    for (let i = 1; i <= forecastPeriod; i++) {
+                    for (let i = 1; i <= params.forecast_length; i++) {
                         const recentSales = data.slice(-params.sequence_length).reduce((sum, d) => sum + d.sales, 0) / params.sequence_length;
                         const seasonal = 1 + 0.1 * Math.sin((i - 1) / 12 * 2 * Math.PI);
                         const predicted = recentSales * (1 + 0.04) * seasonal;
-                        
                         predictions.push({
                             year: 2025,
-                            month: i > 12 ? i - 12 : i,
+                            month: i,
                             sales: Math.round(Math.max(0, predicted)),
-                            date: `${i > 12 ? 2026 : 2025}-${(i > 12 ? i - 12 : i).toString().padStart(2, '0')}`,
+                            date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -999,20 +1140,28 @@
             }, [historicalData]);
 
             // 예측 결과
-            const predictions = useMemo(() => {
-                if (aggregatedData.length === 0) return [];
-                setIsLoading(true);
-
-                try {
-                    const result = algorithms[selectedAlgorithm](aggregatedData, algorithmParameters[selectedAlgorithm]);
-                    setTimeout(() => setIsLoading(false), 500);
-                    return result;
-                } catch (error) {
-                    console.error('예측 오류:', error);
-                    setIsLoading(false);
-                    showToast('예측 중 오류가 발생했습니다.', 'error');
-                    return [];
-                }
+            useEffect(() => {
+                let cancelled = false;
+                const runForecast = async () => {
+                    if (aggregatedData.length === 0) {
+                        setPredictions([]);
+                        return;
+                    }
+                    setIsLoading(true);
+                    try {
+                        const params = { ...algorithmParameters[selectedAlgorithm], forecast_length: forecastPeriod };
+                        const result = await algorithms[selectedAlgorithm](aggregatedData, params, forecastPeriod);
+                        if (!cancelled) setPredictions(result);
+                    } catch (error) {
+                        console.error('예측 오류:', error);
+                        showToast('예측 중 오류가 발생했습니다.', 'error');
+                        if (!cancelled) setPredictions([]);
+                    } finally {
+                        if (!cancelled) setIsLoading(false);
+                    }
+                };
+                runForecast();
+                return () => { cancelled = true; };
             }, [aggregatedData, selectedAlgorithm, algorithmParameters, forecastPeriod]);
 
             // 통계 계산
@@ -1108,6 +1257,36 @@
 
             // 알고리즘 설명 및 파라미터 정보
             const algorithmInfo = {
+                baseline: {
+                    name: "Baseline",
+                    description: "마지막 실제 값을 그대로 사용하는 기본 예측입니다.",
+                    parameters: {
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이" }
+                    }
+                },
+                lag_mlp: {
+                    name: "Lag 회귀 (MLP)",
+                    description: "과거 고정 길이 데이터를 입력으로 하는 다층 퍼셉트론 모델입니다.",
+                    parameters: {
+                        lags: { min: 3, max: 24, step: 1, suffix: "개월", description: "입력 시퀀스 길이" },
+                        hidden_units: { min: 16, max: 128, step: 16, suffix: "", description: "은닉 유닛 수" },
+                        epochs: { min: 10, max: 200, step: 10, suffix: "회", description: "학습 반복" },
+                        learning_rate: { min: 0.001, max: 0.1, step: 0.001, suffix: "", description: "학습률" },
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이" }
+                    }
+                },
+                gru_lstm: {
+                    name: "GRU/LSTM",
+                    description: "순환 신경망 기반 예측으로 GRU 또는 LSTM 셀을 선택할 수 있습니다.",
+                    parameters: {
+                        sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스" },
+                        hidden_units: { min: 16, max: 128, step: 16, suffix: "", description: "은닉 유닛 수" },
+                        epochs: { min: 10, max: 200, step: 10, suffix: "회", description: "학습 반복" },
+                        learning_rate: { min: 0.001, max: 0.1, step: 0.001, suffix: "", description: "학습률" },
+                        use_lstm: { min: 0, max: 1, step: 1, suffix: "", description: "0=GRU, 1=LSTM" },
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이" }
+                    }
+                },
                 advanced_ensemble: {
                     name: "고급 앙상블",
                     description: "4개의 서로 다른 예측 모델을 최적 가중치로 결합하여 더욱 정확하고 안정적인 예측을 제공합니다.",
@@ -1314,6 +1493,11 @@
                                                 className="form-select"
                                                 disabled={isLoading}
                                             >
+                                                <optgroup label="기본 모델">
+                                                    <option value="baseline">Baseline</option>
+                                                    <option value="lag_mlp">Lag 회귀 (MLP)</option>
+                                                    <option value="gru_lstm">GRU/LSTM</option>
+                                                </optgroup>
                                                 <optgroup label="고급 AI 모델">
                                                     <option value="advanced_ensemble">고급 앙상블</option>
                                                     <option value="transformer_model">Transformer</option>
