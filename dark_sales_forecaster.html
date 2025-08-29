@@ -12,6 +12,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style id="dark-theme">
+        :root {
+            --chart-text-color: #cbd5e1;
+            --chart-grid-color: rgba(255, 255, 255, 0.1);
+            --chart-title-color: #ffffff;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -552,7 +558,14 @@
             z-index: 1000;
         }
     </style>
-    <style id="light-theme" disabled>
+
+    <style id="light-theme">
+        :root {
+            --chart-text-color: #374151;
+            --chart-grid-color: rgba(0, 0, 0, 0.1);
+            --chart-title-color: #1f2937;
+        }
+
         /* 전체 스타일링 */
         * {
             margin: 0;
@@ -1017,16 +1030,16 @@
 <body>
     <button id="theme-toggle" class="theme-toggle">☀️</button>
     <div id="root"></div>
-    
         <script>
         const toggleButton = document.getElementById('theme-toggle');
         const darkTheme = document.getElementById('dark-theme');
         const lightTheme = document.getElementById('light-theme');
-        toggleButton.addEventListener('click', () => {
-            const isDark = !darkTheme.disabled;
-            darkTheme.disabled = isDark;
-            lightTheme.disabled = !isDark;
+        lightTheme.disabled = true;
+        document.documentElement.setAttribute('data-theme', 'dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
             toggleButton.textContent = isDark ? '🌙' : '☀️';
+            window.dispatchEvent(new Event('themeChange'));
         });
     </script>
 
@@ -1092,15 +1105,30 @@
         const SalesChart = ({ data, predictions, showConfidenceInterval = true, isLoading = false }) => {
             const chartRef = useRef(null);
             const chartInstanceRef = useRef(null);
+            const [theme, setTheme] = useState('dark');
+
+            useEffect(() => {
+                const handleThemeChange = () => {
+                    setTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+                };
+                window.addEventListener('themeChange', handleThemeChange);
+                handleThemeChange();
+                return () => window.removeEventListener('themeChange', handleThemeChange);
+            }, []);
 
             useEffect(() => {
                 if (!chartRef.current || isLoading) return;
 
                 const ctx = chartRef.current.getContext('2d');
-                
+
                 if (chartInstanceRef.current) {
                     chartInstanceRef.current.destroy();
                 }
+
+                const styles = getComputedStyle(document.documentElement);
+                const textColor = styles.getPropertyValue('--chart-text-color').trim();
+                const gridColor = styles.getPropertyValue('--chart-grid-color').trim();
+                const titleColor = styles.getPropertyValue('--chart-title-color').trim();
 
                 const allData = [...data, ...predictions];
                 const labels = allData.map(d => d.date);
@@ -1108,11 +1136,11 @@
                 const predictedData = allData.map(d => d.type === 'predicted' ? d.sales : null);
 
                 const datasets = [
-                    {
-                        label: '실제 매출',
-                        data: actualData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        {
+                            label: '실제 매출',
+                            data: actualData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         fill: false,
                         tension: 0.4,
                         pointRadius: 4,
@@ -1191,7 +1219,7 @@
                                     weight: 'bold'
                                 },
                                 padding: 20,
-                                color: '#ffffff'
+                                color: titleColor
                             },
                             legend: {
                                 display: true,
@@ -1199,7 +1227,7 @@
                                 labels: {
                                     padding: 20,
                                     usePointStyle: true,
-                                    color: '#cbd5e1'
+                                    color: textColor
                                 }
                             }
                         },
@@ -1212,13 +1240,13 @@
                                     font: {
                                         weight: 'bold'
                                     },
-                                    color: '#cbd5e1'
+                                    color: textColor
                                 },
                                 grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
+                                    color: gridColor
                                 },
                                 ticks: {
-                                    color: '#94a3b8'
+                                    color: textColor
                                 }
                             },
                             y: {
@@ -1229,13 +1257,13 @@
                                     font: {
                                         weight: 'bold'
                                     },
-                                    color: '#cbd5e1'
+                                    color: textColor
                                 },
                                 grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
+                                    color: gridColor
                                 },
                                 ticks: {
-                                    color: '#94a3b8'
+                                    color: textColor
                                 },
                                 beginAtZero: false
                             }
@@ -1252,7 +1280,7 @@
                         chartInstanceRef.current.destroy();
                     }
                 };
-            }, [data, predictions, showConfidenceInterval, isLoading]);
+            }, [data, predictions, showConfidenceInterval, isLoading, theme]);
 
             if (isLoading) {
                 return <LoadingSpinner message="차트 생성 중..." />;
