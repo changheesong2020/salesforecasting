@@ -17,6 +17,7 @@
             --chart-grid-color: rgba(255, 255, 255, 0.1);
             --chart-title-color: #ffffff;
         }
+
         * {
             margin: 0;
             padding: 0;
@@ -557,12 +558,14 @@
             z-index: 1000;
         }
     </style>
+
     <style id="light-theme">
         :root {
             --chart-text-color: #374151;
             --chart-grid-color: rgba(0, 0, 0, 0.1);
             --chart-title-color: #1f2937;
         }
+
         /* 전체 스타일링 */
         * {
             margin: 0;
@@ -1027,17 +1030,12 @@
 <body>
     <button id="theme-toggle" class="theme-toggle">☀️</button>
     <div id="root"></div>
-
         <script>
         const toggleButton = document.getElementById('theme-toggle');
         const darkTheme = document.getElementById('dark-theme');
         const lightTheme = document.getElementById('light-theme');
         lightTheme.disabled = true;
         document.documentElement.setAttribute('data-theme', 'dark');
-        toggleButton.addEventListener('click', () => {
-            const isDark = !darkTheme.disabled;
-            darkTheme.disabled = isDark;
-            lightTheme.disabled = !isDark;
             const newTheme = isDark ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', newTheme);
             toggleButton.textContent = isDark ? '🌙' : '☀️';
