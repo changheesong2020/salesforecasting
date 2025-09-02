@@ -1078,7 +1078,9 @@
                     let year = last.year;
                     let month = last.month + 1;
                     if (month > 12) { year += 1; month = 1; }
-                    setForecastStartMonth(`${year}-${month.toString().padStart(2, '0')}`);
+                    const defaultStart = `${year}-${month.toString().padStart(2, '0')}`;
+                    const userInput = window.prompt('예측 시작월을 입력하세요 (YYYY-MM)', defaultStart);
+                    setForecastStartMonth(userInput || defaultStart);
                 }
             }, [aggregatedData, forecastStartMonth]);
 
