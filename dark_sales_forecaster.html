@@ -615,10 +615,18 @@
                     chartInstanceRef.current.destroy();
                 }
 
-                const allData = [...data, ...predictions];
-                const labels = allData.map(d => d.date);
-                const actualData = allData.map(d => d.type === 'predicted' ? null : d.sales);
-                const predictedData = allData.map(d => d.type === 'predicted' ? d.sales : null);
+                const allDates = Array.from(new Set([
+                    ...data.map(d => d.date),
+                    ...predictions.map(d => d.date)
+                ])).sort();
+                const actualData = allDates.map(date => {
+                    const found = data.find(d => d.date === date);
+                    return found ? found.sales : null;
+                });
+                const predictedData = allDates.map(date => {
+                    const found = predictions.find(d => d.date === date);
+                    return found ? found.sales : null;
+                });
 
                 const datasets = [
                     {
@@ -647,17 +655,13 @@
                 ];
 
                 if (showConfidenceInterval && predictions.length > 0) {
-                    const upperBoundData = allData.map(d => {
-                        if (d.type === 'predicted') {
-                            return d.sales * 1.15;
-                        }
-                        return null;
+                    const upperBoundData = allDates.map(date => {
+                        const pred = predictions.find(d => d.date === date);
+                        return pred ? pred.sales * 1.15 : null;
                     });
-                    const lowerBoundData = allData.map(d => {
-                        if (d.type === 'predicted') {
-                            return d.sales * 0.85;
-                        }
-                        return null;
+                    const lowerBoundData = allDates.map(date => {
+                        const pred = predictions.find(d => d.date === date);
+                        return pred ? pred.sales * 0.85 : null;
                     });
 
                     datasets.push(
@@ -689,7 +693,7 @@
                 chartInstanceRef.current = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: labels,
+                        labels: allDates,
                         datasets: datasets
                     },
                     options: {
@@ -785,6 +789,7 @@
             const [showConfidenceInterval, setShowConfidenceInterval] = useState(true);
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             const [forecastPeriod, setForecastPeriod] = useState(12);
+            const [forecastStartMonth, setForecastStartMonth] = useState('');
             const [predictions, setPredictions] = useState([]);
 
             // 파라미터 상태 관리
@@ -925,9 +930,10 @@
 
             // 고급 알고리즘들
             const algorithms = {
-                advanced_ensemble: (data, params) => {
+                advanced_ensemble: (data, params, startDate) => {
                     if (data.length < 6) return [];
                     const { trend_weight, seasonal_weight, ma_weight, exp_weight, forecast_length } = params;
+                    const [startYear, startMonth] = startDate.split('-').map(Number);
                     const lastValue = data[data.length - 1].sales;
                     const movingAverage = data.slice(-6).reduce((sum, d) => sum + d.sales, 0) / 6;
                     const trend = (lastValue - data[Math.max(0, data.length - 7)].sales) / 6;
@@ -938,20 +944,24 @@
                         const seasonalForecast = movingAverage * (1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI));
                         const expForecast = 0.7 * lastValue + 0.3 * movingAverage;
                         const weighted = (trendForecast * trend_weight + seasonalForecast * seasonal_weight + movingAverage * ma_weight + expForecast * exp_weight) / weightSum;
+                        const idx = startMonth - 1 + (i - 1);
+                        const year = startYear + Math.floor(idx / 12);
+                        const month = (idx % 12) + 1;
                         predictions.push({
-                            year: 2025,
-                            month: i,
+                            year,
+                            month,
                             sales: Math.round(Math.max(0, weighted)),
-                            date: `2025-${i.toString().padStart(2, '0')}`,
+                            date: `${year}-${month.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
                     return predictions;
                 },
 
-                gru_network: (data, params) => {
+                gru_network: (data, params, startDate) => {
                     const { hidden_size, sequence_length, learning_rate, dropout_rate, forecast_length } = params;
                     if (data.length < sequence_length) return [];
+                    const [startYear, startMonth] = startDate.split('-').map(Number);
                     const predictions = [];
                     for (let i = 1; i <= forecast_length; i++) {
                         const recentSales = data.slice(-sequence_length).reduce((sum, d) => sum + d.sales, 0) / sequence_length;
@@ -960,20 +970,24 @@
                         const dropoutFactor = 1 - dropout_rate * 0.5;
                         const seasonal = 1 + 0.1 * Math.sin((i - 1) / 12 * 2 * Math.PI);
                         const predicted = recentSales * capacity * learningFactor * dropoutFactor * seasonal;
+                        const idx = startMonth - 1 + (i - 1);
+                        const year = startYear + Math.floor(idx / 12);
+                        const month = (idx % 12) + 1;
                         predictions.push({
-                            year: 2025,
-                            month: i,
+                            year,
+                            month,
                             sales: Math.round(Math.max(0, predicted)),
-                            date: `2025-${i.toString().padStart(2, '0')}`,
+                            date: `${year}-${month.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
                     return predictions;
                 },
 
-                wavelet_arima: (data, params) => {
+                wavelet_arima: (data, params, startDate) => {
                     if (data.length === 0) return [];
                     const { decomposition_level, arima_p, arima_d, arima_q, forecast_length } = params;
+                    const [startYear, startMonth] = startDate.split('-').map(Number);
                     const window = Math.max(2, decomposition_level * 2);
                     const smoothed = data.map((d, idx) => {
                         const start = Math.max(0, idx - window + 1);
@@ -1016,11 +1030,14 @@
                         }
 
                         const next = diffLevels[0][diffLevels[0].length - 1];
+                        const idx = startMonth - 1 + (i - 1);
+                        const year = startYear + Math.floor(idx / 12);
+                        const month = (idx % 12) + 1;
                         predictions.push({
-                            year: 2025,
-                            month: i,
+                            year,
+                            month,
                             sales: Math.round(Math.max(0, next)),
-                            date: `2025-${i.toString().padStart(2, '0')}`,
+                            date: `${year}-${month.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
                     }
@@ -1050,6 +1067,21 @@
                 return Object.values(grouped).sort((a, b) => a.year - b.year || a.month - b.month);
             }, [filteredData]);
 
+            const trainingData = useMemo(() => {
+                if (!forecastStartMonth) return aggregatedData;
+                return aggregatedData.filter(d => d.date < forecastStartMonth);
+            }, [aggregatedData, forecastStartMonth]);
+
+            useEffect(() => {
+                if (aggregatedData.length > 0 && forecastStartMonth === '') {
+                    const last = aggregatedData[aggregatedData.length - 1];
+                    let year = last.year;
+                    let month = last.month + 1;
+                    if (month > 12) { year += 1; month = 1; }
+                    setForecastStartMonth(`${year}-${month.toString().padStart(2, '0')}`);
+                }
+            }, [aggregatedData, forecastStartMonth]);
+
             // 국가 및 제품 목록
             const countries = useMemo(() => {
                 const countrySet = new Set(historicalData.map(d => d.country));
@@ -1065,14 +1097,14 @@
             useEffect(() => {
                 let cancelled = false;
                 const runForecast = async () => {
-                    if (aggregatedData.length === 0) {
+                    if (trainingData.length === 0 || !forecastStartMonth) {
                         setPredictions([]);
                         return;
                     }
                     setIsLoading(true);
                     try {
                         const params = { ...algorithmParameters[selectedAlgorithm], forecast_length: forecastPeriod };
-                        const result = await algorithms[selectedAlgorithm](aggregatedData, params, forecastPeriod);
+                        const result = await algorithms[selectedAlgorithm](trainingData, params, forecastStartMonth);
                         if (!cancelled) setPredictions(result);
                     } catch (error) {
                         console.error('예측 오류:', error);
@@ -1084,7 +1116,7 @@
                 };
                 runForecast();
                 return () => { cancelled = true; };
-            }, [aggregatedData, selectedAlgorithm, algorithmParameters, forecastPeriod]);
+            }, [trainingData, selectedAlgorithm, algorithmParameters, forecastPeriod, forecastStartMonth]);
 
             // 통계 계산
             const stats = useMemo(() => {
@@ -1102,6 +1134,14 @@
                     avgMonthly2025
                 };
             }, [predictions, aggregatedData]);
+
+            const predictionYearText = useMemo(() => {
+                if (!forecastStartMonth) return forecastPeriod > 12 ? '2025-2026년' : '2025년';
+                const [startYear, startMonth] = forecastStartMonth.split('-').map(Number);
+                const totalMonths = startMonth + forecastPeriod - 1;
+                const endYear = startYear + Math.floor((totalMonths - 1) / 12);
+                return startYear === endYear ? `${startYear}년` : `${startYear}-${endYear}년`;
+            }, [forecastStartMonth, forecastPeriod]);
 
             // CSV 업로드 처리
             const handleFileUpload = async (event) => {
@@ -1476,6 +1516,17 @@
                                             </select>
                                         </div>
 
+                                        <div className="form-group">
+                                            <label className="form-label">예측 시작월</label>
+                                            <input
+                                                type="month"
+                                                value={forecastStartMonth}
+                                                onChange={(e) => setForecastStartMonth(e.target.value)}
+                                                className="form-input"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+
                                         {/* 알고리즘 설명 */}
                                         {algorithmInfo[selectedAlgorithm] && (
                                             <div className="algorithm-description">
@@ -1549,7 +1600,7 @@
                                 <div className="card">
                                     <div className="card-header">
                                         <i className="fas fa-table text-purple-600"></i>
-                                        <h2 className="card-title">{forecastPeriod > 12 ? '2025-2026년' : '2025년'} 월별 예측</h2>
+                                        <h2 className="card-title">{predictionYearText} 월별 예측</h2>
                                     </div>
                                     
                                     {isLoading ? (
