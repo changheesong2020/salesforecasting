@@ -628,9 +628,9 @@
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         fill: false,
                         tension: 0.4,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        borderWidth: 3
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        borderWidth: 2
                     },
                     {
                         label: '예측 매출',
@@ -639,10 +639,10 @@
                         backgroundColor: 'rgba(168, 85, 247, 0.1)',
                         fill: false,
                         tension: 0.4,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
                         borderDash: [10, 5],
-                        borderWidth: 3
+                        borderWidth: 2
                     }
                 ];
 
@@ -662,7 +662,7 @@
 
                     datasets.push(
                         {
-                            label: '95% 신뢰구간',
+                            label: '95% 신뢰구간 상한',
                             data: upperBoundData,
                             borderColor: 'rgba(168, 85, 247, 0.3)',
                             backgroundColor: 'rgba(168, 85, 247, 0.1)',
@@ -673,7 +673,7 @@
                             borderWidth: 1
                         },
                         {
-                            label: '',
+                            label: '95% 신뢰구간 하한',
                             data: lowerBoundData,
                             borderColor: 'rgba(168, 85, 247, 0.3)',
                             backgroundColor: 'rgba(168, 85, 247, 0.1)',
@@ -1339,13 +1339,13 @@
                         <div className="stats-grid">
                             <div className="stat-card">
                                 <div className="stat-value text-blue-600">
-                                    {stats.total2024.toLocaleString()}Test
+                                    {stats.total2024.toLocaleString()}(Test)
                                 </div>
                                 <div className="stat-label">2024년 실제 매출</div>
                             </div>
                             <div className="stat-card">
                                 <div className="stat-value text-purple-600">
-                                    {stats.predicted2025.toLocaleString()}Test
+                                    {stats.predicted2025.toLocaleString()}(Test)
                                 </div>
                                 <div className="stat-label">2025년 예상 매출</div>
                             </div>
@@ -1357,7 +1357,7 @@
                             </div>
                             <div className="stat-card">
                                 <div className="stat-value text-indigo-600">
-                                    {stats.avgMonthly2025.toLocaleString()}Test
+                                    {stats.avgMonthly2025.toLocaleString()}(Test)
                                 </div>
                                 <div className="stat-label">월 평균 매출</div>
                             </div>
