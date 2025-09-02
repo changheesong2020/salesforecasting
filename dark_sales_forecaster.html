@@ -1134,32 +1134,104 @@
             const algorithmInfo = {
                 advanced_ensemble: {
                     name: "고급 앙상블",
-                    description: "4개의 서로 다른 예측 모델을 최적 가중치로 결합하여 더욱 정확하고 안정적인 예측을 제공합니다.",
+                    description: "여러 간단한 예측 방법을 섞어 평균을 내는 방식으로, 한 가지 방법보다 결과가 덜 흔들립니다.",
                     parameters: {
-                        trend_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "추세 가중치" },
-                        seasonal_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "계절성 가중치" },
-                        ma_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "이동평균 가중치" },
-                        exp_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "지수평활 가중치" }
+                        trend_weight: {
+                            min: 0,
+                            max: 1,
+                            step: 0.1,
+                            suffix: "",
+                            description: "최근 매출의 상승·하락 흐름을 얼마나 반영할지"
+                        },
+                        seasonal_weight: {
+                            min: 0,
+                            max: 1,
+                            step: 0.1,
+                            suffix: "",
+                            description: "월별·분기별 반복되는 패턴을 얼마나 반영할지"
+                        },
+                        ma_weight: {
+                            min: 0,
+                            max: 1,
+                            step: 0.1,
+                            suffix: "",
+                            description: "지난 몇 달 평균값을 얼마나 참고할지"
+                        },
+                        exp_weight: {
+                            min: 0,
+                            max: 1,
+                            step: 0.1,
+                            suffix: "",
+                            description: "가장 최근 매출에 더 큰 비중을 둘지"
+                        }
                     }
                 },
                 gru_network: {
                     name: "GRU 신경망",
-                    description: "LSTM보다 효율적인 순환 신경망으로 장기 의존성을 효과적으로 모델링하여 정확한 시계열 예측을 수행합니다.",
+                    description: "과거 매출을 차례대로 기억하면서 다음 달 값을 예측하는 인공지능 모델입니다.",
                     parameters: {
-                        hidden_size: { min: 16, max: 128, step: 8, suffix: "", description: "은닉 유닛 수" },
-                        sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이" },
-                        learning_rate: { min: 0.001, max: 0.1, step: 0.001, suffix: "", description: "학습률" },
-                        dropout_rate: { min: 0.1, max: 0.5, step: 0.1, suffix: "", description: "드롭아웃 비율" }
+                        hidden_size: {
+                            min: 16,
+                            max: 128,
+                            step: 8,
+                            suffix: "",
+                            description: "모델이 정보를 저장하는 칸의 수"
+                        },
+                        sequence_length: {
+                            min: 6,
+                            max: 24,
+                            step: 2,
+                            suffix: "개월",
+                            description: "한 번에 살펴보는 지난 개월 수"
+                        },
+                        learning_rate: {
+                            min: 0.001,
+                            max: 0.1,
+                            step: 0.001,
+                            suffix: "",
+                            description: "모델이 얼마나 빠르게 배움을 반영할지"
+                        },
+                        dropout_rate: {
+                            min: 0.1,
+                            max: 0.5,
+                            step: 0.1,
+                            suffix: "",
+                            description: "과적합을 막기 위해 임의로 무시하는 정보의 비율"
+                        }
                     }
                 },
                 wavelet_arima: {
                     name: "웨이블릿+ARIMA",
-                    description: "웨이블릿 분해로 노이즈를 제거한 후 ARIMA 모델을 적용해 추세와 계절성을 예측합니다.",
+                    description: "데이터를 부드럽게 정리한 뒤 과거 추세와 패턴을 이용해 미래를 예측하는 통계 모델입니다.",
                     parameters: {
-                        decomposition_level: { min: 1, max: 5, step: 1, suffix: "", description: "웨이블릿 분해 레벨" },
-                        arima_p: { min: 0, max: 5, step: 1, suffix: "", description: "ARIMA p 차수" },
-                        arima_d: { min: 0, max: 2, step: 1, suffix: "", description: "ARIMA d 차수" },
-                        arima_q: { min: 0, max: 5, step: 1, suffix: "", description: "ARIMA q 차수" }
+                        decomposition_level: {
+                            min: 1,
+                            max: 5,
+                            step: 1,
+                            suffix: "",
+                            description: "데이터를 얼마나 세세하게 나눠 잡음을 제거할지"
+                        },
+                        arima_p: {
+                            min: 0,
+                            max: 5,
+                            step: 1,
+                            suffix: "",
+                            description: "몇 달 전 값까지 참고할지"
+                        },
+                        arima_d: {
+                            min: 0,
+                            max: 2,
+                            step: 1,
+                            suffix: "",
+                            description: "추세를 없애기 위해 몇 번 차분할지"
+                        },
+                        arima_q: {
+                            min: 0,
+                            max: 5,
+                            step: 1,
+                            suffix: "",
+                            description: "과거 예측 오차를 얼마나 참고할지"
+                        }
                     }
                 }
             };
