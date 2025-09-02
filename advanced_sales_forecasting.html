@@ -1378,18 +1378,41 @@
                 return components.reduce((sum, val) => sum + (val || 0), 0);
             };
 
-            const arimaForecast = (data, order, steps) => {
-                const [p, d, q] = order;
-                const forecast = [];
-                const recent = data.slice(-p);
-                
-                for (let i = 0; i < steps; i++) {
-                    const predicted = recent.reduce((sum, val, idx) => sum + val * (1 - idx * 0.1), 0) / recent.length;
-                    forecast.push(predicted);
-                }
-                
-                return forecast;
-            };
+                const arimaForecast = (data, order, steps) => {
+                    const [p, d, q] = order;
+                    const diffLevels = [data];
+                    for (let i = 0; i < d; i++) {
+                        const prev = diffLevels[i];
+                        const diff = prev.slice(1).map((v, idx) => v - prev[idx]);
+                        diffLevels.push(diff);
+                    }
+
+                    let errors = Array(q).fill(0);
+                    const forecasts = [];
+
+                    for (let i = 0; i < steps; i++) {
+                        const baseDiff = diffLevels[d];
+                        const ar = p ? baseDiff.slice(-p).reduce((sum, v, idx) => sum + v * (p - idx) / p, 0) / p : 0;
+                        const ma = q ? errors.reduce((sum, v, idx) => sum + v * (q - idx) / q, 0) / q : 0;
+                        const nextDiff = ar + ma;
+
+                        if (q) {
+                            errors = [nextDiff, ...errors.slice(0, q - 1)];
+                        }
+                        baseDiff.push(nextDiff);
+
+                        for (let level = d - 1; level >= 0; level--) {
+                            const prev = diffLevels[level];
+                            const lastVal = prev[prev.length - 1];
+                            const increment = diffLevels[level + 1][diffLevels[level + 1].length - 1];
+                            prev.push(lastVal + increment);
+                        }
+
+                        forecasts.push(diffLevels[0][diffLevels[0].length - 1]);
+                    }
+
+                    return forecasts;
+                };
 
             const engineerFeatures = (data) => {
                 return data.map((d, idx) => [
