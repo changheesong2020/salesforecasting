@@ -993,8 +993,13 @@
 
                     for (let i = 1; i <= forecast_length; i++) {
                         const baseDiff = diffLevels[arima_d];
-                        const ar = arima_p ? baseDiff.slice(-arima_p).reduce((sum, v, idx) => sum + v * (arima_p - idx) / arima_p, 0) / arima_p : 0;
-                        const ma = arima_q ? errors.reduce((sum, v, idx) => sum + v * (arima_q - idx) / arima_q, 0) / arima_q : 0;
+                        const arTerms = baseDiff.slice(-arima_p);
+                        const ar = arima_p && arTerms.length
+                            ? arTerms.reduce((sum, v, idx) => sum + v * (arTerms.length - idx) / arTerms.length, 0) / arTerms.length
+                            : 0;
+                        const ma = arima_q
+                            ? errors.reduce((sum, v, idx) => sum + v * (errors.length - idx) / errors.length, 0) / errors.length
+                            : 0;
                         const nextDiff = ar + ma;
 
                         if (arima_q) {
