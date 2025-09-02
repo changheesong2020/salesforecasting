@@ -979,7 +979,6 @@
                         const slice = data.slice(start, idx + 1);
                         return slice.reduce((s, x) => s + x.sales, 0) / slice.length;
                     });
-<
 
                     const diffLevels = [smoothed];
                     for (let d = 0; d < arima_d; d++) {
@@ -1018,10 +1017,6 @@
                             date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
-                        if (arima_q) {
-                            maTerms = [...maTerms.slice(-(arima_q - 1)), next - series[series.length - 1]];
-                        }
-                        series.push(next);
                     }
 
                     return predictions;
