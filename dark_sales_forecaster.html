@@ -925,16 +925,22 @@
             // 고급 알고리즘들
             const algorithms = {
                 advanced_ensemble: (data, params) => {
-                    if (data.length === 0) return [];
+                    if (data.length < 6) return [];
+                    const { trend_weight, seasonal_weight, ma_weight, exp_weight, forecast_length } = params;
+                    const lastValue = data[data.length - 1].sales;
+                    const movingAverage = data.slice(-6).reduce((sum, d) => sum + d.sales, 0) / 6;
+                    const trend = (lastValue - data[Math.max(0, data.length - 7)].sales) / 6;
+                    const weightSum = trend_weight + seasonal_weight + ma_weight + exp_weight || 1;
                     const predictions = [];
-                    for (let i = 1; i <= params.forecast_length; i++) {
-                        const recentSales = data.slice(-6).reduce((sum, d) => sum + d.sales, 0) / 6;
-                        const seasonal = 1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI);
-                        const predicted = recentSales * (1 + 0.05) * seasonal;
+                    for (let i = 1; i <= forecast_length; i++) {
+                        const trendForecast = lastValue + trend * i;
+                        const seasonalForecast = movingAverage * (1 + 0.15 * Math.sin((i - 1) / 12 * 2 * Math.PI));
+                        const expForecast = 0.7 * lastValue + 0.3 * movingAverage;
+                        const weighted = (trendForecast * trend_weight + seasonalForecast * seasonal_weight + movingAverage * ma_weight + expForecast * exp_weight) / weightSum;
                         predictions.push({
                             year: 2025,
                             month: i,
-                            sales: Math.round(Math.max(0, predicted)),
+                            sales: Math.round(Math.max(0, weighted)),
                             date: `2025-${i.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
@@ -943,12 +949,16 @@
                 },
 
                 gru_network: (data, params) => {
-                    if (data.length < 24) return [];
+                    const { hidden_size, sequence_length, learning_rate, dropout_rate, forecast_length } = params;
+                    if (data.length < sequence_length) return [];
                     const predictions = [];
-                    for (let i = 1; i <= params.forecast_length; i++) {
-                        const recentSales = data.slice(-params.sequence_length).reduce((sum, d) => sum + d.sales, 0) / params.sequence_length;
+                    for (let i = 1; i <= forecast_length; i++) {
+                        const recentSales = data.slice(-sequence_length).reduce((sum, d) => sum + d.sales, 0) / sequence_length;
+                        const capacity = 1 + Math.log(hidden_size) / 50;
+                        const learningFactor = 1 + learning_rate;
+                        const dropoutFactor = 1 - dropout_rate * 0.5;
                         const seasonal = 1 + 0.1 * Math.sin((i - 1) / 12 * 2 * Math.PI);
-                        const predicted = recentSales * (1 + 0.04) * seasonal;
+                        const predicted = recentSales * capacity * learningFactor * dropoutFactor * seasonal;
                         predictions.push({
                             year: 2025,
                             month: i,
