@@ -5,7 +5,13 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return send_file('sales_forecasting.html')
+    return send_file('dark_sales_forecaster.html')
+
+
+@app.route('/dark_sales_forecaster.html')
+def dark():
+    return send_file('dark_sales_forecaster.html')
+
 
 
 @app.route('/favicon.svg')
@@ -19,4 +25,4 @@ def favicon_ico():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5173, debug=True)
