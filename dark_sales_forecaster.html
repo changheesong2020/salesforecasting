@@ -167,6 +167,11 @@
             color: #ffffff;
         }
 
+        /* Ensure calendar icon is visible on dark backgrounds */
+        .form-input[type="month"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
         .slider {
             width: 100%;
             height: 6px;
