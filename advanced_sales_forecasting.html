@@ -1378,24 +1378,42 @@
                 return components.reduce((sum, val) => sum + (val || 0), 0);
             };
 
-              const arimaForecast = (data, order, steps) => {
-                  const [p, d, q] = order;
-                  let series = [...data];
-                  let maTerms = Array(q).fill(0);
-                  const forecasts = [];
-                  for (let i = 0; i < steps; i++) {
-                      const ar = p ? series.slice(-p).reduce((sum, v, idx) => sum + v * (1 - idx / p), 0) / p : 0;
-                      const diff = d && series.length > d ? series[series.length - 1] - series[series.length - 1 - d] : 0;
-                      const ma = q ? maTerms.reduce((sum, v, idx) => sum + v * (1 - idx / q), 0) / q : 0;
-                      const next = series[series.length - 1] + ar + ma - diff;
-                      forecasts.push(next);
-                      if (q) {
-                          maTerms = [...maTerms.slice(-(q - 1)), next - series[series.length - 1]];
-                      }
-                      series.push(next);
-                  }
-                  return forecasts;
-              };
+                const arimaForecast = (data, order, steps) => {
+                    const [p, d, q] = order;
+                    const diffLevels = [data];
+                    for (let i = 0; i < d; i++) {
+                        const prev = diffLevels[i];
+                        const diff = prev.slice(1).map((v, idx) => v - prev[idx]);
+                        diffLevels.push(diff);
+                    }
+
+                    let errors = Array(q).fill(0);
+                    const forecasts = [];
+
+                    for (let i = 0; i < steps; i++) {
+                        const baseDiff = diffLevels[d];
+                        const ar = p ? baseDiff.slice(-p).reduce((sum, v, idx) => sum + v * (p - idx) / p, 0) / p : 0;
+                        const ma = q ? errors.reduce((sum, v, idx) => sum + v * (q - idx) / q, 0) / q : 0;
+                        const nextDiff = ar + ma;
+
+                        if (q) {
+                            errors = [nextDiff, ...errors.slice(0, q - 1)];
+                        }
+                        baseDiff.push(nextDiff);
+
+                        for (let level = d - 1; level >= 0; level--) {
+                            const prev = diffLevels[level];
+                            const lastVal = prev[prev.length - 1];
+                            const increment = diffLevels[level + 1][diffLevels[level + 1].length - 1];
+                            prev.push(lastVal + increment);
+                        }
+
+                        forecasts.push(diffLevels[0][diffLevels[0].length - 1]);
+                    }
+
+                    return forecasts;
+                };
+
 
             const engineerFeatures = (data) => {
                 return data.map((d, idx) => [

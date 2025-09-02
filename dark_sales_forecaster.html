@@ -979,14 +979,38 @@
                         const slice = data.slice(start, idx + 1);
                         return slice.reduce((s, x) => s + x.sales, 0) / slice.length;
                     });
-                    let series = [...smoothed];
-                    let maTerms = Array(arima_q).fill(0);
+<
+
+                    const diffLevels = [smoothed];
+                    for (let d = 0; d < arima_d; d++) {
+                        const prev = diffLevels[d];
+                        const diff = prev.slice(1).map((v, i) => v - prev[i]);
+                        diffLevels.push(diff);
+                    }
+
+                    let errors = Array(arima_q).fill(0);
+
                     const predictions = [];
+
                     for (let i = 1; i <= forecast_length; i++) {
-                        const ar = arima_p ? series.slice(-arima_p).reduce((sum, v, idx) => sum + v * (1 - idx / arima_p), 0) / arima_p : 0;
-                        const diff = arima_d && series.length > arima_d ? series[series.length - 1] - series[series.length - 1 - arima_d] : 0;
-                        const ma = arima_q ? maTerms.reduce((sum, v, idx) => sum + v * (1 - idx / arima_q), 0) / arima_q : 0;
-                        const next = series[series.length - 1] + ar + ma - diff;
+                        const baseDiff = diffLevels[arima_d];
+                        const ar = arima_p ? baseDiff.slice(-arima_p).reduce((sum, v, idx) => sum + v * (arima_p - idx) / arima_p, 0) / arima_p : 0;
+                        const ma = arima_q ? errors.reduce((sum, v, idx) => sum + v * (arima_q - idx) / arima_q, 0) / arima_q : 0;
+                        const nextDiff = ar + ma;
+
+                        if (arima_q) {
+                            errors = [nextDiff, ...errors.slice(0, arima_q - 1)];
+                        }
+                        baseDiff.push(nextDiff);
+
+                        for (let level = arima_d - 1; level >= 0; level--) {
+                            const prev = diffLevels[level];
+                            const lastVal = prev[prev.length - 1];
+                            const increment = diffLevels[level + 1][diffLevels[level + 1].length - 1];
+                            prev.push(lastVal + increment);
+                        }
+
+                        const next = diffLevels[0][diffLevels[0].length - 1];
                         predictions.push({
                             year: 2025,
                             month: i,
@@ -999,6 +1023,7 @@
                         }
                         series.push(next);
                     }
+
                     return predictions;
                 }
             };
