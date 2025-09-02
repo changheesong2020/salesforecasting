@@ -979,7 +979,6 @@
                         const slice = data.slice(start, idx + 1);
                         return slice.reduce((s, x) => s + x.sales, 0) / slice.length;
                     });
-<
 
                     const diffLevels = [smoothed];
                     for (let d = 0; d < arima_d; d++) {
