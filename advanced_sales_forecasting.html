@@ -741,7 +741,8 @@
                     decomp_levels: 3,
                     arima_p: 2,
                     arima_d: 1,
-                    arima_q: 2
+                    arima_q: 2,
+                    forecast_length: 12
                 },
                 gradient_boosting: {
                     n_estimators: 100,
@@ -803,7 +804,8 @@
                     decomp_levels: 3,
                     arima_p: 2,
                     arima_d: 1,
-                    arima_q: 2
+                    arima_q: 2,
+                    forecast_length: 12
                 },
                 gradient_boosting: {
                     n_estimators: 100,
@@ -1110,19 +1112,19 @@
                 // 🚀 웨이블릿 + ARIMA
                 wavelet_arima: (data, params) => {
                     if (data.length < 36) return [];
-                    
-                    const { decomp_levels, arima_p, arima_d, arima_q } = params;
+
+                    const { decomp_levels, arima_p, arima_d, arima_q, forecast_length } = params;
                     const predictions = [];
-                    
+
                     const sales = data.map(d => d.sales);
                     const decomposed = waveletDecompose(sales, decomp_levels);
-                    const forecasts = decomposed.map(component => 
-                        arimaForecast(component, [arima_p, arima_d, arima_q], 12)
+                    const forecasts = decomposed.map(component =>
+                        arimaForecast(component, [arima_p, arima_d, arima_q], forecast_length)
                     );
-                    
-                    for (let i = 0; i < 12; i++) {
+
+                    for (let i = 0; i < forecast_length; i++) {
                         const reconstructed = waveletReconstruct(forecasts.map(f => f[i]));
-                        
+
                         predictions.push({
                             year: 2025,
                             month: i + 1,
@@ -1665,7 +1667,8 @@
                         decomp_levels: { min: 2, max: 5, step: 1, suffix: "단계", description: "분해 레벨 수 - 웨이블릿 분해의 세밀함 정도, 높을수록 더 세부적 분석" },
                         arima_p: { min: 1, max: 5, step: 1, suffix: "", description: "AR 차수 - 자기회귀 항의 수, 과거 값의 직접적 영향 정도" },
                         arima_d: { min: 0, max: 2, step: 1, suffix: "", description: "차분 차수 - 비정상성 제거를 위한 차분 횟수, 추세 제거 정도" },
-                        arima_q: { min: 1, max: 5, step: 1, suffix: "", description: "MA 차수 - 이동평균 항의 수, 과거 오차의 영향 정도" }
+                        arima_q: { min: 1, max: 5, step: 1, suffix: "", description: "MA 차수 - 이동평균 항의 수, 과거 오차의 영향 정도" },
+                        forecast_length: { min: 1, max: 24, step: 1, suffix: "개월", description: "예측 길이 - 향후 예측할 기간" }
                     }
                 },
                 gradient_boosting: {
