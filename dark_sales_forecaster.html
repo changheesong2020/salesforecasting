@@ -36,7 +36,7 @@
         .header {
             text-align: center;
             margin-bottom: 2rem;
-            padding: 3rem 2rem;
+            padding: 1.5rem;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
             border-radius: 1.5rem;
             color: white;
@@ -1458,12 +1458,11 @@
                                                                     `±${(pred.sales * 0.15).toFixed(0)}` : 
                                                                     'N/A'}
                                                             </td>
-                                                            <td>
-                                                                <span className="algorithm-badge badge-ai">
-                                                                     <i className="fas fa-robot"></i>
-                                                                        AI
-                                                                </span>
-                                                            </td>
+                                                             <td>
+                                                                    <span className="algorithm-badge badge-ai">
+                                                                        {algorithmInfo[selectedAlgorithm]?.name}
+                                                                    </span>
+                                                                </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
