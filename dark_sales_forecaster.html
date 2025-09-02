@@ -795,9 +795,9 @@
             // 파라미터 상태 관리
             const [algorithmParameters, setAlgorithmParameters] = useState({
                 advanced_ensemble: {
-                    trend_weight: 0.3,
-                    seasonal_weight: 0.3,
-                    ma_weight: 0.2,
+                    trend_weight: 1,
+                    seasonal_weight: 1,
+                    ma_weight: 0.1,
                     exp_weight: 0.2,
                     forecast_length: 12
                 },
@@ -821,10 +821,10 @@
             // 기본값 설정
             const defaultParameters = {
                 advanced_ensemble: {
-                    trend_weight: 0.3,
-                    seasonal_weight: 0.3,
-                    ma_weight: 0.2,
-                    exp_weight: 0.2,
+                    trend_weight: 1,
+                    seasonal_weight: 1,
+                    ma_weight: 0.1,
+                    exp_weight: 0.7,
                     forecast_length: 12
                 },
                 gru_network: {
