@@ -1378,18 +1378,24 @@
                 return components.reduce((sum, val) => sum + (val || 0), 0);
             };
 
-            const arimaForecast = (data, order, steps) => {
-                const [p, d, q] = order;
-                const forecast = [];
-                const recent = data.slice(-p);
-                
-                for (let i = 0; i < steps; i++) {
-                    const predicted = recent.reduce((sum, val, idx) => sum + val * (1 - idx * 0.1), 0) / recent.length;
-                    forecast.push(predicted);
-                }
-                
-                return forecast;
-            };
+              const arimaForecast = (data, order, steps) => {
+                  const [p, d, q] = order;
+                  let series = [...data];
+                  let maTerms = Array(q).fill(0);
+                  const forecasts = [];
+                  for (let i = 0; i < steps; i++) {
+                      const ar = p ? series.slice(-p).reduce((sum, v, idx) => sum + v * (1 - idx / p), 0) / p : 0;
+                      const diff = d && series.length > d ? series[series.length - 1] - series[series.length - 1 - d] : 0;
+                      const ma = q ? maTerms.reduce((sum, v, idx) => sum + v * (1 - idx / q), 0) / q : 0;
+                      const next = series[series.length - 1] + ar + ma - diff;
+                      forecasts.push(next);
+                      if (q) {
+                          maTerms = [...maTerms.slice(-(q - 1)), next - series[series.length - 1]];
+                      }
+                      series.push(next);
+                  }
+                  return forecasts;
+              };
 
             const engineerFeatures = (data) => {
                 return data.map((d, idx) => [
