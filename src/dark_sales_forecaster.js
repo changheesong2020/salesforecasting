@@ -412,29 +412,62 @@
                     return predictions;
                 },
 
-                gru_network: (data, params, startDate) => {
+                gru_network: async (data, params, startDate) => {
                     const { hidden_size, sequence_length, learning_rate, dropout_rate, forecast_length } = params;
-                    if (data.length < sequence_length) return [];
+                    if (data.length <= sequence_length) return [];
                     const [startYear, startMonth] = startDate.split('-').map(Number);
+
+                    // 판매 데이터 추출 및 정규화
+                    const sales = data.map(d => d.sales);
+                    const min = Math.min(...sales);
+                    const max = Math.max(...sales);
+                    const denom = (max - min) || 1;
+                    const normalized = sales.map(v => (v - min) / denom);
+
+                    // 학습용 시퀀스 생성
+                    const xs = [];
+                    const ys = [];
+                    for (let i = sequence_length; i < normalized.length; i++) {
+                        xs.push(normalized.slice(i - sequence_length, i));
+                        ys.push(normalized[i]);
+                    }
+                    const xsTensor = tf.tensor3d(xs.map(seq => seq.map(v => [v])), [xs.length, sequence_length, 1]);
+                    const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
+
+                    // GRU 모델 구성 및 학습
+                    const model = tf.sequential();
+                    model.add(tf.layers.gru({ units: hidden_size, inputShape: [sequence_length, 1], dropout: dropout_rate }));
+                    model.add(tf.layers.dense({ units: 1 }));
+                    model.compile({ optimizer: tf.train.adam(learning_rate), loss: 'meanSquaredError' });
+                    await model.fit(xsTensor, ysTensor, { epochs: 50 });
+
+                    xsTensor.dispose();
+                    ysTensor.dispose();
+
+                    // 미래 값 예측
                     const predictions = [];
-                    for (let i = 1; i <= forecast_length; i++) {
-                        const recentSales = data.slice(-sequence_length).reduce((sum, d) => sum + d.sales, 0) / sequence_length;
-                        const capacity = 1 + Math.log(hidden_size) / 50;
-                        const learningFactor = 1 + learning_rate;
-                        const dropoutFactor = 1 - dropout_rate * 0.5;
-                        const seasonal = 1 + 0.1 * Math.sin((i - 1) / 12 * 2 * Math.PI);
-                        const predicted = recentSales * capacity * learningFactor * dropoutFactor * seasonal;
-                        const idx = startMonth - 1 + (i - 1);
+                    let input = normalized.slice(-sequence_length);
+                    for (let i = 0; i < forecast_length; i++) {
+                        const predTensor = model.predict(tf.tensor3d([input.map(v => [v])], [1, sequence_length, 1]));
+                        const pred = (await predTensor.array())[0][0];
+                        predTensor.dispose();
+
+                        const denorm = pred * denom + min;
+                        const idx = startMonth - 1 + i;
                         const year = startYear + Math.floor(idx / 12);
                         const month = (idx % 12) + 1;
                         predictions.push({
                             year,
                             month,
-                            sales: Math.round(Math.max(0, predicted)),
+                            sales: Math.round(Math.max(0, denorm)),
                             date: `${year}-${month.toString().padStart(2, '0')}`,
                             type: 'predicted'
                         });
+
+                        input = [...input.slice(1), pred];
                     }
+
+                    model.dispose();
                     return predictions;
                 },
 
