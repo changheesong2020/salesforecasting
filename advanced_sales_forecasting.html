@@ -1003,7 +1003,7 @@
                     model.dispose();
                     return predictions;
                 },
-                // 🚀 고급 앙상블
+                // Advanced Ensemble (고급 혼합 예측)
                 advanced_ensemble: (data, params) => {
                     if (data.length === 0) return [];
 
@@ -1074,7 +1074,7 @@
                     return predictions;
                 },
 
-                // 🚀 GRU 신경망
+                // GRU Network (신경망 기반 예측)
                 gru_network: (data, params) => {
                     if (data.length < 24) return [];
                     
@@ -1652,8 +1652,14 @@
                     }
                 },
                 advanced_ensemble: {
-                    name: "🚀 고급 앙상블",
-                    description: "4개의 서로 다른 예측 모델(추세, 계절성, 이동평균, 지수평활)을 최적 가중치로 결합하여 더욱 정확하고 안정적인 예측을 제공합니다. 각 모델의 장점을 결합하여 단일 모델의 한계를 극복합니다.",
+                    name: "Advanced Ensemble (고급 혼합 예측)",
+                    description: `👉 비유: 여러 명의 전문가에게 미래 매출을 물어보고 평균을 내는 방식.
+어떤 전문가는 추세(Trend)를 보고 “매출이 꾸준히 늘고 있으니 앞으로도 계속 늘 거야”라고 말합니다.
+또 다른 전문가는 계절성(Seasonal)을 보고 “여름에는 아이스크림이 잘 팔리니 이 시기엔 매출이 올라갈 거야”라고 말하죠.
+다른 전문가는 이동평균(MA)을 보고 “최근 6개월 평균으로 보면 이런 정도로 팔릴 거야”라고 합니다.
+또 한 명은 지수평활(Exp)을 보고 “최근 매출에 조금 더 무게를 두고 보면 이렇게 될 거야”라고 말합니다.
+이 네 사람의 의견을 가중치에 따라 적절히 섞어서 최종 예측을 만듭니다.
+즉, 여러 관점(추세, 계절, 평균, 최근 성향)을 동시에 고려해 안정적인 예측을 해주는 방법이에요.`,
                     parameters: {
                         trend_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "추세 모델의 가중치 - 데이터의 장기적 증가/감소 패턴 반영 정도" },
                         seasonal_weight: { min: 0, max: 1, step: 0.1, suffix: "", description: "계절성 모델의 가중치 - 월별/분기별 반복 패턴 반영 정도" },
@@ -1674,8 +1680,13 @@
                     }
                 },
                 gru_network: {
-                    name: "🧠 GRU 신경망",
-                    description: "LSTM보다 효율적인 순환 신경망으로 장기 의존성을 효과적으로 모델링합니다. 게이트 메커니즘을 통해 중요한 정보는 기억하고 불필요한 정보는 망각하여 정확한 시계열 예측을 수행합니다.",
+                    name: "GRU Network (신경망 기반 예측)",
+                    description: `👉 비유: 경험 많은 똑똑한 “예측 AI 비서”가 패턴을 학습해서 답하는 방식.
+GRU는 뇌처럼 기억을 잘하는 인공지능 모델이에요.
+이 비서는 과거의 매출 데이터를 일정 기간(예: 최근 12개월) 동안 학습해서, "보통 이 정도 패턴이면 다음 달엔 이렇게 되겠구나" 하고 예상합니다.
+여기서는 숨겨진 계산(은닉층), 학습 속도(learning rate), 실수 방지(dropout) 같은 인공지능 설정이 들어갑니다.
+그래서 단순한 평균 계산보다 데이터의 흐름과 패턴을 깊이 이해해서 예측을 해줍니다.
+즉, 사람이 일일이 공식 세우지 않아도, 데이터에서 스스로 규칙을 찾아 미래를 예측하는 AI 방식이에요.`,
                     parameters: {
                         hidden_size: { min: 16, max: 128, step: 8, suffix: "", description: "은닉 유닛 수 - 네트워크의 기억 용량과 학습 복잡도 결정" },
                         sequence_length: { min: 6, max: 24, step: 2, suffix: "개월", description: "입력 시퀀스 길이 - GRU가 기억할 과거 데이터의 범위" },
@@ -1685,8 +1696,14 @@
                     }
                 },
                 wavelet_arima: {
-                    name: "📊 웨이블릿+ARIMA",
-                    description: "웨이블릿 변환으로 시계열을 다중 해상도로 분해한 후 각 성분에 ARIMA 모델을 적용하는 하이브리드 접근법입니다. 신호 처리 기법과 전통적 통계 모델을 결합하여 복잡한 패턴을 효과적으로 모델링합니다.",
+                    name: "Wavelet ARIMA (웨이블릿 + 시계열 모델)",
+                    description: `👉 비유: 시계열 전문가가 데이터를 “분해해서 분석”하는 방식.
+웨이블릿(Wavelet)은 데이터를 부드럽게 다듬어 잡음(노이즈)을 줄이고 패턴을 드러내는 역할을 합니다.
+그다음 ARIMA 모델이 등장하는데, 이건 오래된 전통적인 시계열 예측 도구입니다.
+AR(자기회귀): 과거 값이 미래 값에 어떤 영향을 주는지 계산
+I(차분): 데이터의 추세를 제거해 안정적으로 만듦
+MA(이동 평균 오차): 예측의 불확실성을 반영
+즉, 데이터를 먼저 깨끗하게 정리(웨이블릿)한 뒤, 수학적 모델(ARIMA)로 미래를 추정하는 방식이에요.`,
                     parameters: {
                         decomp_levels: { min: 2, max: 5, step: 1, suffix: "단계", description: "분해 레벨 수 - 웨이블릿 분해의 세밀함 정도, 높을수록 더 세부적 분석" },
                         arima_p: { min: 1, max: 5, step: 1, suffix: "", description: "AR 차수 - 자기회귀 항의 수, 과거 값의 직접적 영향 정도" },
@@ -1907,13 +1924,13 @@
                                                     <option value="lag_mlp">Lag 회귀 (MLP)</option>
                                                     <option value="gru_lstm">GRU/LSTM</option>
                                                 </optgroup>
-                                                <optgroup label="🚀 고급 AI 모델">
-                                                    <option value="advanced_ensemble">고급 앙상블</option>
-                                                    <option value="transformer_model">Transformer</option>
-                                                    <option value="gru_network">GRU 신경망</option>
-                                                    <option value="wavelet_arima">웨이블릿+ARIMA</option>
-                                                    <option value="gradient_boosting">그라디언트 부스팅</option>
-                                                    <option value="nbeats_model">N-BEATS</option>
+                                                  <optgroup label="🚀 고급 AI 모델">
+                                                      <option value="advanced_ensemble">Advanced Ensemble (고급 혼합 예측)</option>
+                                                      <option value="transformer_model">Transformer</option>
+                                                      <option value="gru_network">GRU Network (신경망 기반 예측)</option>
+                                                      <option value="wavelet_arima">Wavelet ARIMA (웨이블릿 + 시계열 모델)</option>
+                                                      <option value="gradient_boosting">그라디언트 부스팅</option>
+                                                      <option value="nbeats_model">N-BEATS</option>
                                                 </optgroup>
                                             </select>
                                         </div>
