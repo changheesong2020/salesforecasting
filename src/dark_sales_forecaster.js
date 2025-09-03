@@ -988,8 +988,8 @@
                                                 disabled={isLoading}
                                             >
                                                 <option value="advanced_ensemble">고급 앙상블</option>
-                                                <option value="gru_network">GRU 신경망</option>
                                                 <option value="wavelet_arima">웨이블릿+ARIMA</option>
+                                                <option value="gru_network">AI 모델 -GRU 신경망</option>
                                             </select>
                                         </div>
 
