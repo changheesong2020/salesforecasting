@@ -13,17 +13,13 @@ def index():
 def dark():
     return send_from_directory('', 'dark_sales_forecaster.html')
 
-@app.route('/src/dark_sales_forecaster.html')
-def srcdark():
-    return send_from_directory('src', 'dark_sales_forecaster.html')
-
-@app.route('/src/dark_sales_forecaster.css')
+@app.route('/dark_sales_forecaster.css')
 def srccssdark():
-    return send_from_directory('src', 'dark_sales_forecaster.css')
+    return send_from_directory('', 'dark_sales_forecaster.css')
 
-@app.route('/src/dark_sales_forecaster.js')
+@app.route('/dark_sales_forecaster.js')
 def srcjsdark():
-    return send_from_directory('src', 'dark_sales_forecaster.js')
+    return send_from_directory('', 'dark_sales_forecaster.js')
 
 # Place your CSS and JS files in the 'static' directory (e.g., 'static/dark_sales_forecaster.css' and 'static/dark_sales_forecaster.js')
 # Flask will serve them automatically at '/static/dark_sales_forecaster.css' and '/static/dark_sales_forecaster.js'
