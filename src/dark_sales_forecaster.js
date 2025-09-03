@@ -1004,9 +1004,12 @@ MA(이동 평균 오차): 예측의 불확실성을 반영
                                                 className="form-select"
                                                 disabled={isLoading}
                                             >
+
                                                 <option value="advanced_ensemble">Advanced Ensemble (고급 혼합 예측)</option>
-                                                <option value="gru_network">GRU Network (신경망 기반 예측)</option>
                                                 <option value="wavelet_arima">Wavelet ARIMA (웨이블릿 + 시계열 모델)</option>
+                                                <option value="gru_network">GRU Network (신경망 기반 예측)</option>
+                                              
+
                                             </select>
                                         </div>
 
