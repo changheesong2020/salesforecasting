@@ -249,6 +249,13 @@
             transform: translateY(-2px);
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .btn-reset {
             background: rgba(245, 158, 11, 0.2);
             color: #fbbf24;
@@ -270,6 +277,23 @@
             border-radius: 0.75rem;
             padding: 1rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-inner {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chart-inner canvas {
+            flex: 1;
+        }
+
+        .chart-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
         }
 
         /* 테이블 */
