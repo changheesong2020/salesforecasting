@@ -198,7 +198,9 @@
                                 },
                                 pan: {
                                     enabled: true,
-                                    mode: 'xy',
+
+                                    mode: 'x',
+
                                     modifierKey: 'ctrl'
                                 },
                                 zoom: {
@@ -213,7 +215,8 @@
                                         backgroundColor: 'rgba(59, 130, 246, 0.15)',
                                         modifierKey: 'shift'
                                     },
-                                    mode: 'xy'
+                                    mode: 'x'
+
                                 }
                             }
                         },
