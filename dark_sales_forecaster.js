@@ -198,7 +198,9 @@
                                 },
                                 pan: {
                                     enabled: true,
+
                                     mode: 'x',
+
                                     modifierKey: 'ctrl'
                                 },
                                 zoom: {
@@ -214,6 +216,7 @@
                                         modifierKey: 'shift'
                                     },
                                     mode: 'x'
+
                                 }
                             }
                         },
