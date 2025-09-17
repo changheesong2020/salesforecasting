@@ -60,6 +60,30 @@ python app.py
 http://localhost:5173
 ```
 
+## ♻️ 백그라운드 실행 스크립트
+
+서버가 중단되더라도 자동으로 재시작되도록 유지하려면, 저장소 루트에 있는 `run_app_background.sh` 스크립트를 활용하세요. 기본적으로 `python app.py` 명령을 실행하며, 로그와 PID 정보는 `logs/` 디렉터리에 저장됩니다.
+
+```bash
+# 백그라운드 실행 시작
+./run_app_background.sh start
+
+# 상태 확인
+./run_app_background.sh status
+
+# 로그 확인
+./run_app_background.sh logs
+
+# 백그라운드 실행 중지
+./run_app_background.sh stop
+```
+
+필요에 따라 환경 변수를 통해 동작을 조정할 수 있습니다. 예를 들어 로그 디렉터리와 재시작 대기 시간을 바꾸고 싶다면 다음과 같이 실행합니다.
+
+```bash
+LOG_DIR=custom_logs RESTART_DELAY=10 ./run_app_background.sh start
+```
+
 ## 📘 사용 가이드
 
 1. 서버를 실행한 후 브라우저에서 `http://localhost:5173`에 접속합니다.
