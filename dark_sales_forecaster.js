@@ -1,5 +1,17 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
+        // Chart.js Zoom 플러그인 등록 (중복 등록 방지)
+        if (window.Chart && !window.__chartZoomPluginRegistered) {
+            const zoomPlugin =
+                window.ChartZoom ||
+                window.chartjsPluginZoom ||
+                window['chartjs-plugin-zoom'];
+            if (zoomPlugin) {
+                Chart.register(zoomPlugin);
+                window.__chartZoomPluginRegistered = true;
+            }
+        }
+
         // 토스트 알림 컴포넌트
         const Toast = ({ message, type, show, onClose }) => {
             useEffect(() => {
@@ -60,6 +72,7 @@
             const chartRef = useRef(null);
             const chartInstanceRef = useRef(null);
 
+<<<<<<< HEAD
             const handleZoomIn = () => {
                 if (chartInstanceRef.current) {
                     chartInstanceRef.current.zoom(1.2);
@@ -77,6 +90,13 @@
                     chartInstanceRef.current.resetZoom();
                 }
             };
+=======
+            const handleResetZoom = useCallback(() => {
+                if (chartInstanceRef.current?.resetZoom) {
+                    chartInstanceRef.current.resetZoom();
+                }
+            }, []);
+>>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
 
             useEffect(() => {
                 if (!chartRef.current || isLoading) return;
@@ -193,6 +213,7 @@
                             },
                             zoom: {
                                 limits: {
+<<<<<<< HEAD
                                     x: {min: 'original', max: 'original'},
                                     y: {min: 'original', max: 'original'}
                                 },
@@ -206,12 +227,28 @@
                                         enabled: true,
                                         speed: 0.15,
                                         modifierKey: null
+=======
+                                    x: { min: 'original', max: 'original' },
+                                    y: { min: 'original', max: 'original' }
+                                },
+                                pan: {
+                                    enabled: true,
+
+                                    mode: 'x',
+
+                                    modifierKey: 'ctrl'
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true
+>>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
                                     },
                                     pinch: {
                                         enabled: true
                                     },
                                     drag: {
                                         enabled: true,
+<<<<<<< HEAD
                                         backgroundColor: 'rgba(168, 85, 247, 0.1)',
                                         borderColor: 'rgba(168, 85, 247, 0.8)',
                                         borderWidth: 1
@@ -219,6 +256,13 @@
                                     mode: 'xy',
                                     scaleMode: 'xy',
                                     overScaleMode: 'xy'
+=======
+                                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                        modifierKey: 'shift'
+                                    },
+                                    mode: 'x'
+
+>>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
                                 }
                             }
                         },
@@ -278,6 +322,7 @@
             }
 
             return (
+<<<<<<< HEAD
                 <div className="chart-wrapper">
                     <div className="chart-controls">
                         <button
@@ -303,6 +348,22 @@
                         </button>
                     </div>
                     <canvas ref={chartRef} />
+=======
+                <div className="chart-inner">
+                    <div className="chart-toolbar">
+                        <button
+                            type="button"
+                            className="btn btn-reset"
+                            onClick={handleResetZoom}
+                            disabled={isLoading}
+                            title="Shift 드래그 또는 마우스 휠로 확대/축소, Ctrl+드래그로 이동"
+                        >
+                            <i className="fas fa-search-minus"></i>
+                            줌 초기화
+                        </button>
+                    </div>
+                    <canvas ref={chartRef} style={{ flex: 1 }} />
+>>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
                 </div>
             );
         };
