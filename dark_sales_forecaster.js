@@ -60,6 +60,24 @@
             const chartRef = useRef(null);
             const chartInstanceRef = useRef(null);
 
+            const handleZoomIn = () => {
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.zoom(1.2);
+                }
+            };
+
+            const handleZoomOut = () => {
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.zoom(0.8);
+                }
+            };
+
+            const handleResetZoom = () => {
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.resetZoom();
+                }
+            };
+
             useEffect(() => {
                 if (!chartRef.current || isLoading) return;
 
@@ -172,6 +190,36 @@
                                     usePointStyle: true,
                                     color: '#cbd5e1'
                                 }
+                            },
+                            zoom: {
+                                limits: {
+                                    x: {min: 'original', max: 'original'},
+                                    y: {min: 'original', max: 'original'}
+                                },
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy',
+                                    threshold: 5
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                        speed: 0.15,
+                                        modifierKey: null
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    drag: {
+                                        enabled: true,
+                                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                        borderColor: 'rgba(168, 85, 247, 0.8)',
+                                        borderWidth: 1
+                                    },
+                                    mode: 'xy',
+                                    scaleMode: 'xy',
+                                    overScaleMode: 'xy'
+                                }
                             }
                         },
                         scales: {
@@ -229,7 +277,34 @@
                 return <LoadingSpinner message="차트 생성 중..." />;
             }
 
-            return <canvas ref={chartRef} />;
+            return (
+                <div className="chart-wrapper">
+                    <div className="chart-controls">
+                        <button
+                            onClick={handleZoomIn}
+                            className="zoom-btn zoom-in"
+                            title="확대"
+                        >
+                            <i className="fas fa-search-plus"></i>
+                        </button>
+                        <button
+                            onClick={handleZoomOut}
+                            className="zoom-btn zoom-out"
+                            title="축소"
+                        >
+                            <i className="fas fa-search-minus"></i>
+                        </button>
+                        <button
+                            onClick={handleResetZoom}
+                            className="zoom-btn reset-zoom"
+                            title="원래 크기로 되돌리기"
+                        >
+                            <i className="fas fa-expand-arrows-alt"></i>
+                        </button>
+                    </div>
+                    <canvas ref={chartRef} />
+                </div>
+            );
         };
 
         // 메인 앱 컴포넌트
