@@ -1,5 +1,17 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
+        // Chart.js Zoom 플러그인 등록 (중복 등록 방지)
+        if (window.Chart && !window.__chartZoomPluginRegistered) {
+            const zoomPlugin =
+                window.ChartZoom ||
+                window.chartjsPluginZoom ||
+                window['chartjs-plugin-zoom'];
+            if (zoomPlugin) {
+                Chart.register(zoomPlugin);
+                window.__chartZoomPluginRegistered = true;
+            }
+        }
+
         // 토스트 알림 컴포넌트
         const Toast = ({ message, type, show, onClose }) => {
             useEffect(() => {
@@ -59,6 +71,12 @@
         const SalesChart = ({ data, predictions, showConfidenceInterval = true, isLoading = false }) => {
             const chartRef = useRef(null);
             const chartInstanceRef = useRef(null);
+
+            const handleResetZoom = useCallback(() => {
+                if (chartInstanceRef.current?.resetZoom) {
+                    chartInstanceRef.current.resetZoom();
+                }
+            }, []);
 
             useEffect(() => {
                 if (!chartRef.current || isLoading) return;
@@ -172,6 +190,31 @@
                                     usePointStyle: true,
                                     color: '#cbd5e1'
                                 }
+                            },
+                            zoom: {
+                                limits: {
+                                    x: { min: 'original', max: 'original' },
+                                    y: { min: 'original', max: 'original' }
+                                },
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy',
+                                    modifierKey: 'ctrl'
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    drag: {
+                                        enabled: true,
+                                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                        modifierKey: 'shift'
+                                    },
+                                    mode: 'xy'
+                                }
                             }
                         },
                         scales: {
@@ -229,7 +272,23 @@
                 return <LoadingSpinner message="차트 생성 중..." />;
             }
 
-            return <canvas ref={chartRef} />;
+            return (
+                <div className="chart-inner">
+                    <div className="chart-toolbar">
+                        <button
+                            type="button"
+                            className="btn btn-reset"
+                            onClick={handleResetZoom}
+                            disabled={isLoading}
+                            title="Shift 드래그 또는 마우스 휠로 확대/축소, Ctrl+드래그로 이동"
+                        >
+                            <i className="fas fa-search-minus"></i>
+                            줌 초기화
+                        </button>
+                    </div>
+                    <canvas ref={chartRef} style={{ flex: 1 }} />
+                </div>
+            );
         };
 
         // 메인 앱 컴포넌트
