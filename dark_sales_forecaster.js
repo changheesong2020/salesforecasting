@@ -72,31 +72,11 @@
             const chartRef = useRef(null);
             const chartInstanceRef = useRef(null);
 
-<<<<<<< HEAD
-            const handleZoomIn = () => {
-                if (chartInstanceRef.current) {
-                    chartInstanceRef.current.zoom(1.2);
-                }
-            };
-
-            const handleZoomOut = () => {
-                if (chartInstanceRef.current) {
-                    chartInstanceRef.current.zoom(0.8);
-                }
-            };
-
-            const handleResetZoom = () => {
-                if (chartInstanceRef.current) {
-                    chartInstanceRef.current.resetZoom();
-                }
-            };
-=======
             const handleResetZoom = useCallback(() => {
                 if (chartInstanceRef.current?.resetZoom) {
                     chartInstanceRef.current.resetZoom();
                 }
             }, []);
->>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
 
             useEffect(() => {
                 if (!chartRef.current || isLoading) return;
@@ -213,21 +193,6 @@
                             },
                             zoom: {
                                 limits: {
-<<<<<<< HEAD
-                                    x: {min: 'original', max: 'original'},
-                                    y: {min: 'original', max: 'original'}
-                                },
-                                pan: {
-                                    enabled: true,
-                                    mode: 'xy',
-                                    threshold: 5
-                                },
-                                zoom: {
-                                    wheel: {
-                                        enabled: true,
-                                        speed: 0.15,
-                                        modifierKey: null
-=======
                                     x: { min: 'original', max: 'original' },
                                     y: { min: 'original', max: 'original' }
                                 },
@@ -241,28 +206,17 @@
                                 zoom: {
                                     wheel: {
                                         enabled: true
->>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
                                     },
                                     pinch: {
                                         enabled: true
                                     },
                                     drag: {
                                         enabled: true,
-<<<<<<< HEAD
-                                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                                        borderColor: 'rgba(168, 85, 247, 0.8)',
-                                        borderWidth: 1
-                                    },
-                                    mode: 'xy',
-                                    scaleMode: 'xy',
-                                    overScaleMode: 'xy'
-=======
                                         backgroundColor: 'rgba(59, 130, 246, 0.15)',
                                         modifierKey: 'shift'
                                     },
                                     mode: 'x'
 
->>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
                                 }
                             }
                         },
@@ -322,33 +276,6 @@
             }
 
             return (
-<<<<<<< HEAD
-                <div className="chart-wrapper">
-                    <div className="chart-controls">
-                        <button
-                            onClick={handleZoomIn}
-                            className="zoom-btn zoom-in"
-                            title="확대"
-                        >
-                            <i className="fas fa-search-plus"></i>
-                        </button>
-                        <button
-                            onClick={handleZoomOut}
-                            className="zoom-btn zoom-out"
-                            title="축소"
-                        >
-                            <i className="fas fa-search-minus"></i>
-                        </button>
-                        <button
-                            onClick={handleResetZoom}
-                            className="zoom-btn reset-zoom"
-                            title="원래 크기로 되돌리기"
-                        >
-                            <i className="fas fa-expand-arrows-alt"></i>
-                        </button>
-                    </div>
-                    <canvas ref={chartRef} />
-=======
                 <div className="chart-inner">
                     <div className="chart-toolbar">
                         <button
@@ -363,7 +290,6 @@
                         </button>
                     </div>
                     <canvas ref={chartRef} style={{ flex: 1 }} />
->>>>>>> 21ea997d5c72e4a95279c56bff8ba3792543b65a
                 </div>
             );
         };
